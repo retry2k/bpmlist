@@ -1,65 +1,215 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { EventData, REGIONS, GENRE_CATEGORIES } from "@/types/event";
+import EventPanel from "@/components/EventPanel";
+import EventList from "@/components/EventList";
+
+const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
+
+type GenreFilter = "all" | "house" | "techno" | "dnb" | "other";
 
 export default function Home() {
+  const [regionId, setRegionId] = useState("BayArea");
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [genreFilter, setGenreFilter] = useState<GenreFilter>("all");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const region = REGIONS.find((r) => r.id === regionId) || REGIONS[0];
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setSelectedEvent(null);
+
+    fetch(`/api/events?region=${regionId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch events");
+        return res.json();
+      })
+      .then((data) => {
+        setEvents(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [regionId]);
+
+  const filteredEvents = useMemo(() => {
+    if (genreFilter === "all") return events;
+
+    const genreKeywords = GENRE_CATEGORIES[genreFilter];
+    if (genreFilter === "other") {
+      const allKnownKeywords = [
+        ...GENRE_CATEGORIES.house,
+        ...GENRE_CATEGORIES.techno,
+        ...GENRE_CATEGORIES.dnb,
+      ];
+      return events.filter((e) =>
+        !e.tags.some((tag) =>
+          allKnownKeywords.some((kw) => tag.toLowerCase().includes(kw))
+        )
+      );
+    }
+
+    return events.filter((e) =>
+      e.tags.some((tag) =>
+        genreKeywords.some((kw) => tag.toLowerCase().includes(kw))
+      )
+    );
+  }, [events, genreFilter]);
+
+  const mappableEvents = useMemo(
+    () => filteredEvents.filter((e) => e.lat != null && e.lng != null),
+    [filteredEvents]
+  );
+
+  const handleEventClick = useCallback((event: EventData) => {
+    setSelectedEvent(event);
+  }, []);
+
+  const genres: { key: GenreFilter; label: string }[] = [
+    { key: "all", label: "all" },
+    { key: "house", label: "house" },
+    { key: "techno", label: "techno" },
+    { key: "dnb", label: "dnb" },
+    { key: "other", label: "other" },
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="h-screen w-screen bg-zinc-950 text-white flex flex-col overflow-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-3 bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 z-[1001] flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-bold tracking-tight font-mono">
+            bpmlist
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <span className="hidden sm:inline text-zinc-600 text-xs font-mono">
+            find your bpm
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="flex items-center gap-3">
+          {/* Region selector */}
+          <select
+            value={regionId}
+            onChange={(e) => setRegionId(e.target.value)}
+            className="bg-zinc-800 text-zinc-300 text-sm rounded px-3 py-1.5 border border-zinc-700 focus:outline-none focus:border-zinc-500 font-mono cursor-pointer"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {REGIONS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Sidebar toggle */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-zinc-400 hover:text-white p-1.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+            title={sidebarOpen ? "Hide list" : "Show list"}
           >
-            Documentation
-          </a>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+            </svg>
+          </button>
         </div>
-      </main>
+      </header>
+
+      {/* Genre filters */}
+      <div className="flex items-center gap-1 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/50 z-[1001] flex-shrink-0">
+        {genres.map((g) => (
+          <button
+            key={g.key}
+            onClick={() => setGenreFilter(g.key)}
+            className={`px-3 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
+              genreFilter === g.key
+                ? "bg-white text-black"
+                : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+            }`}
+          >
+            {g.label}
+          </button>
+        ))}
+        <span className="ml-auto text-zinc-600 text-xs font-mono">
+          {loading ? "loading..." : `${mappableEvents.length} events`}
+        </span>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex relative overflow-hidden">
+        {/* Sidebar */}
+        {sidebarOpen && (
+          <div className="w-80 bg-zinc-900/90 border-r border-zinc-800 overflow-y-auto flex-shrink-0 z-[999]">
+            <div className="p-3">
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="w-5 h-5 border-2 border-zinc-600 border-t-white rounded-full animate-spin" />
+                </div>
+              ) : error ? (
+                <p className="text-red-400 text-sm font-mono p-4">{error}</p>
+              ) : filteredEvents.length === 0 ? (
+                <p className="text-zinc-500 text-sm font-mono p-4">no events found</p>
+              ) : (
+                <EventList
+                  events={filteredEvents}
+                  onEventHover={setHoveredEventId}
+                  onEventClick={handleEventClick}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Map */}
+        <div className="flex-1 relative">
+          <EventMap
+            events={mappableEvents}
+            center={region.center}
+            zoom={region.zoom}
+            onEventClick={handleEventClick}
+            hoveredEventId={hoveredEventId}
+          />
+
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 bg-zinc-950/60 flex items-center justify-center z-[500]">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-zinc-600 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-zinc-400 text-sm font-mono">fetching events...</p>
+                <p className="text-zinc-600 text-xs font-mono mt-1">geocoding venues may take a moment</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Event detail panel */}
+        {selectedEvent && (
+          <EventPanel
+            event={selectedEvent}
+            onClose={() => setSelectedEvent(null)}
+          />
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="px-4 py-1.5 bg-zinc-900/80 border-t border-zinc-800 z-[1001] flex-shrink-0">
+        <p className="text-zinc-600 text-[10px] font-mono">
+          data via{" "}
+          <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2">
+            19hz.info
+          </a>
+          {" "}&middot; see you on the dance floor :&#93;
+        </p>
+      </footer>
     </div>
   );
 }
