@@ -78,7 +78,7 @@ export default function Home() {
 
     return genreFiltered.filter((e) => {
       const eventDate = parseEventDate(e.date);
-      if (!eventDate) return timeFilter === "later"; // recurring only in "later"
+      if (!eventDate) return false; // recurring events only shown in "later" (handled above)
 
       if (timeFilter === "now") {
         return isSameDay(eventDate, today);
