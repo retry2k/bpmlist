@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import { EventData } from "@/types/event";
 import { REGIONS } from "@/types/event";
 import { CITY_COORDS } from "@/lib/city-coords";
+import { VENUE_COORDS } from "@/lib/venue-coords";
 
 // Cache for cities not in the static lookup
 const GEOCODE_CACHE = new Map<string, { lat: number; lng: number } | null>();
@@ -175,8 +176,20 @@ export async function GET(request: NextRequest) {
       await new Promise((r) => setTimeout(r, 1100));
     }
 
-    // Assign coordinates to events with jitter
+    // Assign coordinates to events: venue-level first, then city-level with jitter
     const geocodedEvents: EventData[] = events.map((event) => {
+      // Try exact venue match first (VenueName|City format)
+      if (event.venue && event.city) {
+        const venueKey = `${event.venue}|${event.city}`;
+        const venueCoords = VENUE_COORDS[venueKey];
+        if (venueCoords) {
+          // Tiny jitter so overlapping venue events don't stack exactly
+          const jitter = () => (Math.random() - 0.5) * 0.0005;
+          return { ...event, lat: venueCoords.lat + jitter(), lng: venueCoords.lng + jitter() };
+        }
+      }
+
+      // Fall back to city-level coords with larger jitter
       if (event.city && cityCoords.has(event.city)) {
         const coords = cityCoords.get(event.city)!;
         // Skip invalid coords (like TBA with 0,0)
@@ -184,7 +197,7 @@ export async function GET(request: NextRequest) {
           const jitter = () => (Math.random() - 0.5) * 0.02;
           return { ...event, lat: regionInfo.center[0] + jitter(), lng: regionInfo.center[1] + jitter() };
         }
-        const jitter = () => (Math.random() - 0.5) * 0.01;
+        const jitter = () => (Math.random() - 0.5) * 0.025;
         return { ...event, lat: coords.lat + jitter(), lng: coords.lng + jitter() };
       }
 
