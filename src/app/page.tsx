@@ -22,6 +22,38 @@ export default function Home() {
   const [genreFilter, setGenreFilter] = useState<GenreFilter>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("soon");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationInput, setLocationInput] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const handleLocationSubmit = useCallback(() => {
+    if (!locationInput.trim()) return;
+    setLocationLoading(true);
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationInput)}&format=json&limit=1`, {
+      headers: { "User-Agent": "bpmlist/1.0" },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data || data.length === 0) {
+          setLocationLoading(false);
+          return;
+        }
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        const label = data[0].display_name.split(",").slice(0, 2).join(",");
+        setUserLocation({ lat, lng, label });
+        setLocationModalOpen(false);
+        setLocationInput("");
+        setLocationLoading(false);
+      })
+      .catch(() => {
+        setLocationLoading(false);
+      });
+  }, [locationInput]);
 
   const region = REGIONS.find((r) => r.id === regionId) || REGIONS[0];
 
@@ -78,12 +110,11 @@ export default function Home() {
 
     return genreFiltered.filter((e) => {
       const eventDate = parseEventDate(e.date);
-      if (!eventDate) return false; // recurring events only shown in "later" (handled above)
+      if (!eventDate) return false;
 
       if (timeFilter === "now") {
         return isSameDay(eventDate, today);
       }
-      // "soon" = today through 7 days
       return isWithinDays(eventDate, today, 7);
     });
   }, [genreFiltered, timeFilter]);
@@ -111,7 +142,13 @@ export default function Home() {
     { key: "later", label: "later" },
   ];
 
-  const listContent = loading ? (
+  // Shared sidebar/list content: either event detail or event list
+  const panelContent = selectedEvent ? (
+    <EventPanel
+      event={selectedEvent}
+      onClose={() => setSelectedEvent(null)}
+    />
+  ) : loading ? (
     <div className="flex items-center justify-center py-20">
       <div className="w-5 h-5 border-2 border-zinc-600 border-t-white rounded-full animate-spin" />
     </div>
@@ -126,6 +163,37 @@ export default function Home() {
       onEventClick={handleEventClick}
     />
   );
+
+  // Time filter buttons (reused in header bar and mobile list)
+  const timeFilterButtons = (
+    <div className="flex items-center gap-0.5">
+      {timeFilters.map((t) => (
+        <button
+          key={t.key}
+          onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
+          className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
+            timeFilter === t.key
+              ? "bg-cyan-500 text-black font-bold"
+              : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Prevent hydration mismatch from Date-dependent rendering
+  if (!mounted) {
+    return (
+      <div className="h-screen w-screen bg-zinc-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-zinc-600 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-zinc-400 text-sm font-mono">loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-zinc-950 text-white flex flex-col overflow-hidden">
@@ -167,24 +235,9 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Filters bar */}
-      <div className="flex items-center gap-1 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/50 z-[1001] flex-shrink-0">
-        {/* Time filters */}
-        <div className="flex items-center gap-0.5 mr-2">
-          {timeFilters.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTimeFilter(t.key)}
-              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
-                timeFilter === t.key
-                  ? "bg-cyan-500 text-black font-bold"
-                  : "text-zinc-500 hover:text-white hover:bg-zinc-800"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      {/* Filters bar - desktop only (mobile filters are above the list) */}
+      <div className="hidden md:flex items-center gap-1 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/50 z-[1001] flex-shrink-0">
+        {timeFilterButtons}
 
         <div className="w-px h-4 bg-zinc-700 mx-1" />
 
@@ -192,7 +245,7 @@ export default function Home() {
         {genres.map((g) => (
           <button
             key={g.key}
-            onClick={() => setGenreFilter(g.key)}
+            onClick={() => { setGenreFilter(g.key); setSelectedEvent(null); }}
             className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
               genreFilter === g.key
                 ? "bg-white text-black"
@@ -213,7 +266,7 @@ export default function Home() {
         {/* Desktop Sidebar (left) */}
         {sidebarOpen && (
           <div className="hidden md:block w-80 bg-zinc-900/90 border-r border-zinc-800 overflow-y-auto flex-shrink-0 z-[999]">
-            {listContent}
+            {panelContent}
           </div>
         )}
 
@@ -225,6 +278,8 @@ export default function Home() {
             zoom={region.zoom}
             onEventClick={handleEventClick}
             hoveredEventId={hoveredEventId}
+            onLocationRequest={() => setLocationModalOpen(true)}
+            userLocation={userLocation}
           />
 
           {/* Loading overlay */}
@@ -238,18 +293,38 @@ export default function Home() {
           )}
         </div>
 
-        {/* Mobile list (bottom) */}
-        <div className="md:hidden h-[45vh] bg-zinc-900/90 border-t border-zinc-800 overflow-y-auto flex-shrink-0">
-          {listContent}
-        </div>
+        {/* Mobile list area (bottom) */}
+        <div className="md:hidden flex flex-col h-[45vh] bg-zinc-900/90 border-t border-zinc-800 flex-shrink-0">
+          {/* Mobile filters bar */}
+          <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-800/50 flex-shrink-0">
+            {timeFilterButtons}
 
-        {/* Event detail panel */}
-        {selectedEvent && (
-          <EventPanel
-            event={selectedEvent}
-            onClose={() => setSelectedEvent(null)}
-          />
-        )}
+            <div className="w-px h-4 bg-zinc-700 mx-1" />
+
+            {genres.map((g) => (
+              <button
+                key={g.key}
+                onClick={() => { setGenreFilter(g.key); setSelectedEvent(null); }}
+                className={`px-2 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
+                  genreFilter === g.key
+                    ? "bg-white text-black"
+                    : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+
+            <span className="ml-auto text-zinc-600 text-xs font-mono">
+              {loading ? "..." : `${filteredEvents.length}`}
+            </span>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto">
+            {panelContent}
+          </div>
+        </div>
       </div>
 
       {/* Footer - hidden on mobile */}
@@ -262,6 +337,39 @@ export default function Home() {
           {" "}&middot; see you on the dance floor :&#93;
         </p>
       </footer>
+
+      {/* Location input modal */}
+      {locationModalOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-5 w-80 shadow-2xl">
+            <h3 className="text-white text-sm font-mono font-bold mb-3">Set your location</h3>
+            <input
+              type="text"
+              value={locationInput}
+              onChange={(e) => setLocationInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleLocationSubmit(); }}
+              placeholder="Enter address or city..."
+              autoFocus
+              className="w-full bg-zinc-800 text-white text-sm font-mono rounded px-3 py-2 border border-zinc-600 focus:outline-none focus:border-cyan-500 placeholder-zinc-500"
+            />
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => { setLocationModalOpen(false); setLocationInput(""); }}
+                className="flex-1 px-3 py-1.5 text-xs font-mono text-zinc-400 hover:text-white bg-zinc-800 rounded border border-zinc-700 cursor-pointer"
+              >
+                cancel
+              </button>
+              <button
+                onClick={handleLocationSubmit}
+                disabled={locationLoading || !locationInput.trim()}
+                className="flex-1 px-3 py-1.5 text-xs font-mono text-black bg-cyan-500 hover:bg-cyan-400 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+              >
+                {locationLoading ? "finding..." : "find me"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

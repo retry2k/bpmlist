@@ -166,15 +166,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Geocode unknown cities via Nominatim (usually very few)
-    for (const city of unknownCities) {
-      const coords = await geocodeCity(city, regionInfo.state, regionInfo.center);
-      if (coords) {
-        cityCoords.set(city, coords);
-      }
-      // Rate limit for Nominatim
-      await new Promise((r) => setTimeout(r, 1100));
-    }
+    // Skip Nominatim geocoding to avoid timeouts on serverless
+    // Unknown cities fall back to region center with jitter
 
     // Assign coordinates to events: venue-level first, then city-level with jitter
     const geocodedEvents: EventData[] = events.map((event) => {

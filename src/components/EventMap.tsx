@@ -14,6 +14,8 @@ interface EventMapProps {
   zoom: number;
   onEventClick: (event: EventData) => void;
   hoveredEventId: string | null;
+  onLocationRequest: () => void;
+  userLocation: { lat: number; lng: number; label: string } | null;
 }
 
 function getMarkerColor(tags: string[]): string {
@@ -26,11 +28,14 @@ function getMarkerColor(tags: string[]): string {
   return "#66ff66";
 }
 
-export default function EventMap({ events, center, zoom, onEventClick, hoveredEventId }: EventMapProps) {
+export default function EventMap({ events, center, zoom, onEventClick, hoveredEventId, onLocationRequest, userLocation }: EventMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const onLocationRequestRef = useRef(onLocationRequest);
+  onLocationRequestRef.current = onLocationRequest;
 
   // Initialize map
   useEffect(() => {
@@ -40,6 +45,45 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
       zoomControl: false,
     }).setView(center, zoom);
 
+    // Location button control (above zoom)
+    const LocationControl = L.Control.extend({
+      options: { position: "bottomright" as L.ControlPosition },
+      onAdd: () => {
+        const container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+        const btn = L.DomUtil.create("a", "", container);
+        btn.href = "#";
+        btn.title = "Set your location";
+        btn.role = "button";
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin:7px;">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>`;
+        Object.assign(btn.style, {
+          width: "30px",
+          height: "30px",
+          lineHeight: "30px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          backgroundColor: "#18181b",
+          color: "#a1a1aa",
+          borderColor: "#3f3f46",
+        });
+        btn.onmouseover = () => { btn.style.backgroundColor = "#27272a"; btn.style.color = "#fafafa"; };
+        btn.onmouseout = () => { btn.style.backgroundColor = "#18181b"; btn.style.color = "#a1a1aa"; };
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.on(btn, "click", (e) => {
+          L.DomEvent.preventDefault(e);
+          onLocationRequestRef.current();
+        });
+
+        return container;
+      },
+    });
+
+    new LocationControl().addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
@@ -63,6 +107,34 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
       mapRef.current.setView(center, zoom);
     }
   }, [center, zoom]);
+
+  // Handle user location marker
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Remove previous marker
+    if (userMarkerRef.current) {
+      mapRef.current.removeLayer(userMarkerRef.current);
+      userMarkerRef.current = null;
+    }
+
+    if (userLocation) {
+      const icon = L.divIcon({
+        html: `<div class="user-location-marker"></div>`,
+        className: "",
+        iconSize: L.point(24, 24),
+        iconAnchor: L.point(12, 12),
+      });
+
+      const marker = L.marker([userLocation.lat, userLocation.lng], { icon, zIndexOffset: 1000 });
+      marker.bindTooltip(
+        `<div style="font-family: monospace; font-size: 12px;"><strong>You are here</strong><br/>${userLocation.label}</div>`,
+        { direction: "top", offset: [0, -14], className: "event-tooltip" }
+      );
+      marker.addTo(mapRef.current);
+      userMarkerRef.current = marker;
+    }
+  }, [userLocation]);
 
   // Update markers when events change
   useEffect(() => {

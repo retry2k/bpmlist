@@ -9,12 +9,15 @@ interface EventPanelProps {
 
 export default function EventPanel({ event, onClose }: EventPanelProps) {
   return (
-    <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:top-4 md:bottom-auto md:w-96 bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg p-5 z-[1000] shadow-2xl">
+    <div className="p-4">
       <button
         onClick={onClose}
-        className="absolute top-3 right-3 text-zinc-400 hover:text-white text-xl leading-none cursor-pointer"
+        className="flex items-center gap-1 text-zinc-500 hover:text-white text-xs font-mono mb-3 cursor-pointer"
       >
-        &times;
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        back to list
       </button>
 
       <div className="space-y-3">
@@ -22,7 +25,7 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
           <p className="text-zinc-400 text-xs font-mono uppercase tracking-wider">
             {event.date} {event.time}
           </p>
-          <h3 className="text-white text-lg font-bold mt-1 pr-6 leading-tight">{event.title}</h3>
+          <h3 className="text-white text-lg font-bold mt-1 leading-tight">{event.title}</h3>
         </div>
 
         <div>

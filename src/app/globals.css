@@ -44,6 +44,13 @@ html, body {
   color: #fafafa !important;
 }
 
+/* Put location button above zoom in bottomright */
+.leaflet-bottom.leaflet-right {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+
 .leaflet-control-attribution {
   background: rgba(9, 9, 11, 0.8) !important;
   color: #52525b !important;
@@ -75,6 +82,44 @@ html, body {
 
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
+}
+
+/* User location marker - rainbow pulse */
+@keyframes rainbow-border {
+  0%   { border-color: #ff0000; box-shadow: 0 0 12px #ff000088; }
+  16%  { border-color: #ff8800; box-shadow: 0 0 12px #ff880088; }
+  33%  { border-color: #ffff00; box-shadow: 0 0 12px #ffff0088; }
+  50%  { border-color: #00ff44; box-shadow: 0 0 12px #00ff4488; }
+  66%  { border-color: #0088ff; box-shadow: 0 0 12px #0088ff88; }
+  83%  { border-color: #aa00ff; box-shadow: 0 0 12px #aa00ff88; }
+  100% { border-color: #ff0000; box-shadow: 0 0 12px #ff000088; }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.user-location-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #ff0000;
+  animation: rainbow-border 3s linear infinite;
+  position: relative;
+}
+
+.user-location-marker::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  animation: pulse-ring 2s ease-out infinite;
 }
 
 /* Scrollbar styling */
