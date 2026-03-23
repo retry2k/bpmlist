@@ -167,17 +167,31 @@ export async function GET(request: NextRequest) {
     const html = await res.text();
     const events = parseEvents(html);
 
-    // Resolve city coordinates: try region-specific key first, then generic
+    // Helper: resolve city coords handling compound names like "Venice/Los Angeles"
+    function resolveCityCoords(rawCity: string): { lat: number; lng: number } | null {
+      // Try region-specific key first
+      const regionKey = `${rawCity}|${region}`;
+      if (CITY_COORDS[regionKey]) return CITY_COORDS[regionKey];
+      if (CITY_COORDS[rawCity]) return CITY_COORDS[rawCity];
+
+      // Handle compound city names: "Venice/Los Angeles" -> try "Venice" first
+      if (rawCity.includes("/")) {
+        const parts = rawCity.split("/").map(p => p.trim());
+        for (const part of parts) {
+          const rk = `${part}|${region}`;
+          if (CITY_COORDS[rk]) return CITY_COORDS[rk];
+          if (CITY_COORDS[part]) return CITY_COORDS[part];
+        }
+      }
+      return null;
+    }
+
+    // Resolve city coordinates
     const cityCoords = new Map<string, { lat: number; lng: number }>();
     for (const event of events) {
       if (!event.city || cityCoords.has(event.city)) continue;
-      // Try region-specific key first (e.g., "Aurora|Denver", "Hollywood|Miami")
-      const regionKey = `${event.city}|${region}`;
-      if (CITY_COORDS[regionKey]) {
-        cityCoords.set(event.city, CITY_COORDS[regionKey]);
-      } else if (CITY_COORDS[event.city]) {
-        cityCoords.set(event.city, CITY_COORDS[event.city]);
-      }
+      const coords = resolveCityCoords(event.city);
+      if (coords) cityCoords.set(event.city, coords);
     }
 
     // Collect unique venues that need geocoding
