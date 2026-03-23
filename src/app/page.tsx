@@ -146,12 +146,12 @@ export default function Home() {
     />
   ) : loading ? (
     <div className="flex items-center justify-center py-20">
-      <div className="w-5 h-5 border-2 border-zinc-600 border-t-white rounded-full animate-spin" />
+      <div className="w-5 h-5 border-2 border-neutral-600 border-t-white rounded-full animate-spin" />
     </div>
   ) : error ? (
     <p className="text-red-400 text-sm font-mono p-4">{error}</p>
   ) : filteredEvents.length === 0 ? (
-    <p className="text-zinc-500 text-sm font-mono p-4">no events found</p>
+    <p className="text-neutral-500 text-sm font-mono p-4">no events found</p>
   ) : (
     <EventList
       events={filteredEvents}
@@ -169,8 +169,8 @@ export default function Home() {
           onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
           className={`px-3.5 py-1.5 text-sm font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
-              ? "bg-cyan-500 text-black font-bold"
-              : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+              ? "bg-purple-500 text-white font-bold"
+              : "text-neutral-500 hover:text-white hover:bg-neutral-800"
           }`}
         >
           {t.label}
@@ -195,8 +195,8 @@ export default function Home() {
           onClick={() => { setGenreFilter(g); setSelectedEvent(null); setGenreDropdownOpen(false); }}
           className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs"} font-mono rounded transition-colors cursor-pointer ${
             genreFilter === g
-              ? "bg-white text-black font-bold"
-              : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+              ? "bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30"
+              : "text-neutral-500 hover:text-white hover:bg-neutral-800"
           }`}
         >
           {g}
@@ -209,8 +209,8 @@ export default function Home() {
           onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
           className={`${compact ? "px-2.5 py-1 text-sm" : "px-3 py-1.5 text-sm"} font-mono rounded transition-colors cursor-pointer font-bold ${
             isCustomGenre
-              ? "bg-white text-black"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+              : "text-neutral-400 hover:text-white hover:bg-neutral-800"
           }`}
           title="More genres"
         >
@@ -224,15 +224,15 @@ export default function Home() {
               className="fixed inset-0 z-[1999]"
               onClick={() => setGenreDropdownOpen(false)}
             />
-            <div className="absolute top-full right-0 mt-1 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-[2000] py-1">
+            <div className="absolute top-full right-0 mt-1 w-48 bg-neutral-900 border border-neutral-700 rounded-lg shadow-2xl z-[2000] py-1">
               {DROPDOWN_GENRE_TAGS.map((tag) => (
                 <button
                   key={tag}
                   onClick={() => handleDropdownSelect(tag)}
                   className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors cursor-pointer ${
                     genreFilter === tag
-                      ? "bg-zinc-700 text-white font-bold"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                      ? "bg-neutral-700 text-white font-bold"
+                      : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}
                 >
                   {tag}
@@ -247,24 +247,24 @@ export default function Home() {
 
   if (!mounted) {
     return (
-      <div className="h-screen w-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="h-screen w-screen bg-neutral-950 text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-zinc-600 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-zinc-400 text-sm font-mono">loading...</p>
+          <div className="w-8 h-8 border-2 border-neutral-600 border-t-purple-400 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-neutral-400 text-sm font-mono">loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen bg-zinc-950 text-white flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-neutral-950 text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 z-[1001] flex-shrink-0">
+      <header className="flex items-center justify-between px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-[1001] flex-shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold tracking-tight font-mono">
-            bpmlist
+          <h1 className="text-xl font-black tracking-tighter">
+            bpm<span className="text-purple-500">list</span>
           </h1>
-          <span className="hidden sm:inline text-zinc-600 text-xs font-mono">
+          <span className="hidden sm:inline text-neutral-500 text-xs font-mono">
             find your bpm
           </span>
         </div>
@@ -273,7 +273,7 @@ export default function Home() {
           <select
             value={regionId}
             onChange={(e) => setRegionId(e.target.value)}
-            className="bg-zinc-800 text-zinc-300 text-sm rounded px-3 py-1.5 border border-zinc-700 focus:outline-none focus:border-zinc-500 font-mono cursor-pointer"
+            className="bg-neutral-800 text-neutral-300 text-sm rounded px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-neutral-500 font-mono cursor-pointer"
           >
             {REGIONS.map((r) => (
               <option key={r.id} value={r.id}>
@@ -285,7 +285,7 @@ export default function Home() {
           {/* Desktop sidebar toggle */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden md:block text-zinc-400 hover:text-white p-1.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="hidden md:block text-neutral-400 hover:text-white p-1.5 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
             title={sidebarOpen ? "Hide list" : "Show list"}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -297,14 +297,14 @@ export default function Home() {
       </header>
 
       {/* Filters bar - desktop only */}
-      <div className="hidden md:flex items-center gap-1.5 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/50 z-[1001] flex-shrink-0">
+      <div className="hidden md:flex items-center gap-1.5 px-4 py-2 bg-neutral-900/60 border-b border-neutral-800/50 z-[1001] flex-shrink-0">
         {timeFilterButtons}
 
-        <div className="w-px h-5 bg-zinc-700 mx-1.5" />
+        <div className="w-px h-5 bg-neutral-700 mx-1.5" />
 
         {genreFilterButtons()}
 
-        <span className="ml-auto text-zinc-600 text-xs font-mono">
+        <span className="ml-auto text-neutral-500 text-xs font-mono">
           {loading ? "loading..." : `${filteredEvents.length}`}
         </span>
       </div>
@@ -313,7 +313,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
         {/* Desktop Sidebar */}
         {sidebarOpen && (
-          <div className="hidden md:block w-80 bg-zinc-900/90 border-r border-zinc-800 overflow-y-auto flex-shrink-0 z-[999]">
+          <div className="hidden md:block w-80 bg-neutral-900/90 border-r border-neutral-800 overflow-y-auto flex-shrink-0 z-[999]">
             {panelContent}
           </div>
         )}
@@ -331,22 +331,22 @@ export default function Home() {
           />
 
           {loading && (
-            <div className="absolute inset-0 bg-zinc-950/60 flex items-center justify-center z-[500]">
+            <div className="absolute inset-0 bg-neutral-950/60 flex items-center justify-center z-[500]">
               <div className="text-center">
-                <div className="w-8 h-8 border-2 border-zinc-600 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-zinc-400 text-sm font-mono">fetching events...</p>
+                <div className="w-8 h-8 border-2 border-neutral-600 border-t-purple-400 rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-neutral-400 text-sm font-mono">fetching events...</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Mobile list area */}
-        <div className="md:hidden flex flex-col h-[45vh] bg-zinc-900/90 border-t border-zinc-800 flex-shrink-0">
+        <div className="md:hidden flex flex-col h-[45vh] bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0">
           {/* Mobile filters */}
-          <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-zinc-800/50 flex-shrink-0">
+          <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               {timeFilterButtons}
-              <span className="text-zinc-600 text-xs font-mono">
+              <span className="text-neutral-600 text-xs font-mono">
                 {loading ? "..." : `${filteredEvents.length}`}
               </span>
             </div>
@@ -362,10 +362,10 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="hidden md:block px-4 py-1.5 bg-zinc-900/80 border-t border-zinc-800 z-[1001] flex-shrink-0">
-        <p className="text-zinc-600 text-[10px] font-mono">
+      <footer className="hidden md:block px-4 py-1.5 bg-neutral-900/90 border-t border-neutral-800 z-[1001] flex-shrink-0">
+        <p className="text-neutral-600 text-[10px] font-mono">
           data via{" "}
-          <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2">
+          <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
             19hz.info
           </a>
           {" "}&middot; say yes to the afters
@@ -375,7 +375,7 @@ export default function Home() {
       {/* Location input modal */}
       {locationModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-5 w-80 shadow-2xl">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-5 w-80 shadow-2xl">
             <h3 className="text-white text-sm font-mono font-bold mb-3">Set your location</h3>
             <input
               type="text"
@@ -384,19 +384,19 @@ export default function Home() {
               onKeyDown={(e) => { if (e.key === "Enter") handleLocationSubmit(); }}
               placeholder="Enter address or city..."
               autoFocus
-              className="w-full bg-zinc-800 text-white text-sm font-mono rounded px-3 py-2 border border-zinc-600 focus:outline-none focus:border-cyan-500 placeholder-zinc-500"
+              className="w-full bg-neutral-800 text-white text-sm font-mono rounded px-3 py-2 border border-neutral-600 focus:outline-none focus:border-purple-500 placeholder-neutral-500"
             />
             <div className="flex gap-2 mt-3">
               <button
                 onClick={() => { setLocationModalOpen(false); setLocationInput(""); }}
-                className="flex-1 px-3 py-1.5 text-xs font-mono text-zinc-400 hover:text-white bg-zinc-800 rounded border border-zinc-700 cursor-pointer"
+                className="flex-1 px-3 py-1.5 text-xs font-mono text-neutral-400 hover:text-white bg-neutral-800 rounded border border-neutral-700 cursor-pointer"
               >
                 cancel
               </button>
               <button
                 onClick={handleLocationSubmit}
                 disabled={locationLoading || !locationInput.trim()}
-                className="flex-1 px-3 py-1.5 text-xs font-mono text-black bg-cyan-500 hover:bg-cyan-400 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                className="flex-1 px-3 py-1.5 text-xs font-mono text-white bg-purple-500 hover:bg-purple-400 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-bold"
               >
                 {locationLoading ? "finding..." : "find me"}
               </button>

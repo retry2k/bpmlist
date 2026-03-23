@@ -62,11 +62,11 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
       {grouped.map((group) => (
         <div key={group.label}>
           {/* Date header */}
-          <div className="sticky top-0 z-10 px-3 py-1.5 bg-zinc-950/90 backdrop-blur-sm border-b border-zinc-800/50">
-            <span className="text-zinc-400 text-xs font-mono font-bold uppercase tracking-wider">
+          <div className="sticky top-0 z-10 px-3 py-1.5 bg-neutral-950/90 backdrop-blur-sm border-b border-neutral-800/50">
+            <span className="text-neutral-400 text-xs font-mono font-bold uppercase tracking-wider">
               {group.label}
             </span>
-            <span className="text-zinc-600 text-xs font-mono ml-2">
+            <span className="text-neutral-600 text-xs font-mono ml-2">
               {group.events.length}
             </span>
           </div>
@@ -76,7 +76,7 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
             {group.events.map((event) => (
               <div
                 key={event.id}
-                className="px-3 py-2 rounded cursor-pointer transition-colors hover:bg-zinc-800/50"
+                className="px-3 py-2 rounded cursor-pointer transition-colors hover:bg-neutral-800/50"
                 onMouseEnter={() => onEventHover(event.id)}
                 onMouseLeave={() => onEventHover(null)}
                 onClick={() => onEventClick(event)}
@@ -85,7 +85,7 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
                   <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${getDotColor(event.tags)}`} />
                   <div className="min-w-0">
                     <p className="text-white text-sm font-medium truncate">{event.title}</p>
-                    <p className="text-zinc-500 text-xs font-mono truncate">
+                    <p className="text-neutral-500 text-xs font-mono truncate">
                       {event.venue}{event.city ? ` · ${event.city}` : ""} · {event.time}
                     </p>
                   </div>

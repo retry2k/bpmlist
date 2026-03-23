@@ -12,7 +12,7 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
     <div className="p-4">
       <button
         onClick={onClose}
-        className="flex items-center gap-1 text-zinc-500 hover:text-white text-xs font-mono mb-3 cursor-pointer"
+        className="flex items-center gap-1 text-neutral-500 hover:text-white text-xs font-mono mb-3 cursor-pointer"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="15 18 9 12 15 6" />
@@ -22,19 +22,19 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
 
       <div className="space-y-3">
         <div>
-          <p className="text-zinc-400 text-xs font-mono uppercase tracking-wider">
+          <p className="text-neutral-400 text-xs font-mono uppercase tracking-wider">
             {event.date} {event.time}
           </p>
           <h3 className="text-white text-lg font-bold mt-1 leading-tight">{event.title}</h3>
         </div>
 
         <div>
-          <p className="text-zinc-300 text-sm">
-            <span className="text-zinc-500">@</span> {event.venue}
-            {event.city && <span className="text-zinc-500"> ({event.city})</span>}
+          <p className="text-neutral-300 text-sm">
+            <span className="text-neutral-500">@</span> {event.venue}
+            {event.city && <span className="text-neutral-500"> ({event.city})</span>}
           </p>
           {event.address && (
-            <p className="text-zinc-500 text-xs mt-0.5 font-mono">{event.address}</p>
+            <p className="text-neutral-500 text-xs mt-0.5 font-mono">{event.address}</p>
           )}
         </div>
 
@@ -43,7 +43,7 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
             {event.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-zinc-800 text-zinc-300 text-xs rounded font-mono"
+                className="px-2 py-0.5 bg-neutral-800 text-neutral-300 text-xs rounded font-mono"
               >
                 {tag}
               </span>
@@ -61,8 +61,8 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
         </div>
 
         {event.organizers && (
-          <p className="text-zinc-400 text-xs">
-            <span className="text-zinc-600">by</span> {event.organizers}
+          <p className="text-neutral-400 text-xs">
+            <span className="text-neutral-600">by</span> {event.organizers}
           </p>
         )}
 
@@ -72,7 +72,7 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
               href={event.eventUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 text-xs font-mono underline underline-offset-2"
+              className="text-purple-400 hover:text-purple-300 text-xs font-mono underline underline-offset-2"
             >
               event page &rarr;
             </a>
@@ -83,7 +83,7 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 text-xs font-mono underline underline-offset-2"
+              className="text-purple-400 hover:text-purple-300 text-xs font-mono underline underline-offset-2"
             >
               {link.label.toLowerCase()} &rarr;
             </a>
