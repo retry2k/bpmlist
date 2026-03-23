@@ -11,6 +11,7 @@ export interface EventData {
   age: string;
   organizers: string;
   links: { label: string; url: string }[];
+  address?: string;
   lat?: number;
   lng?: number;
 }

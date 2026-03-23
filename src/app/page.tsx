@@ -104,18 +104,21 @@ export default function Home() {
 
   // Apply time filter
   const filteredEvents = useMemo(() => {
-    if (timeFilter === "later") return genreFiltered;
-
     const today = new Date();
 
     return genreFiltered.filter((e) => {
       const eventDate = parseEventDate(e.date);
-      if (!eventDate) return false;
+      if (!eventDate) return timeFilter === "later"; // recurring events show in later only
 
       if (timeFilter === "now") {
         return isSameDay(eventDate, today);
       }
-      return isWithinDays(eventDate, today, 7);
+      if (timeFilter === "soon") {
+        // Tomorrow through 7 days (exclude today)
+        return !isSameDay(eventDate, today) && isWithinDays(eventDate, today, 7);
+      }
+      // "later" - all events except today
+      return !isSameDay(eventDate, today);
     });
   }, [genreFiltered, timeFilter]);
 

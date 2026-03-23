@@ -33,6 +33,9 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
             <span className="text-zinc-500">@</span> {event.venue}
             {event.city && <span className="text-zinc-500"> ({event.city})</span>}
           </p>
+          {event.address && (
+            <p className="text-zinc-500 text-xs mt-0.5 font-mono">{event.address}</p>
+          )}
         </div>
 
         {event.tags.length > 0 && (
