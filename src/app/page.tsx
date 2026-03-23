@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { EventData, REGIONS, GENRE_CATEGORIES, ALL_GENRE_TAGS } from "@/types/event";
+import { EventData, REGIONS, GENRE_CATEGORIES, DROPDOWN_GENRE_TAGS } from "@/types/event";
 import { parseEventDate, isSameDay, isWithinDays } from "@/lib/date-utils";
 import EventPanel from "@/components/EventPanel";
 import EventList from "@/components/EventList";
@@ -31,22 +31,8 @@ export default function Home() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
-
-  // Close genre dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setGenreDropdownOpen(false);
-      }
-    }
-    if (genreDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [genreDropdownOpen]);
 
   const handleLocationSubmit = useCallback(() => {
     if (!locationInput.trim()) return;
@@ -109,9 +95,10 @@ export default function Home() {
       );
     }
 
-    // Individual tag from dropdown - exact match
+    // Individual tag from dropdown - includes match
+    const filterLower = genreFilter.toLowerCase();
     return events.filter((e) =>
-      e.tags.some((tag) => tag.toLowerCase() === genreFilter.toLowerCase())
+      e.tags.some((tag) => tag.toLowerCase().includes(filterLower))
     );
   }, [events, genreFilter]);
 
@@ -192,14 +179,21 @@ export default function Home() {
     </div>
   );
 
+  // Handle selecting a genre from the dropdown
+  const handleDropdownSelect = useCallback((tag: string) => {
+    setGenreFilter(tag);
+    setSelectedEvent(null);
+    setGenreDropdownOpen(false);
+  }, []);
+
   // Genre filter buttons + dropdown (reused in desktop bar and mobile)
   const genreFilterButtons = (compact: boolean = false) => (
-    <div className="flex items-center gap-0.5 relative">
+    <div className="flex items-center gap-1.5 relative">
       {QUICK_GENRES.map((g) => (
         <button
           key={g}
           onClick={() => { setGenreFilter(g); setSelectedEvent(null); setGenreDropdownOpen(false); }}
-          className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1 text-xs"} font-mono rounded transition-colors cursor-pointer ${
+          className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs"} font-mono rounded transition-colors cursor-pointer ${
             genreFilter === g
               ? "bg-white text-black font-bold"
               : "text-zinc-500 hover:text-white hover:bg-zinc-800"
@@ -210,13 +204,13 @@ export default function Home() {
       ))}
 
       {/* + dropdown button */}
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative">
         <button
           onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
-          className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1 text-xs"} font-mono rounded transition-colors cursor-pointer ${
+          className={`${compact ? "px-2.5 py-1 text-sm" : "px-3 py-1.5 text-sm"} font-mono rounded transition-colors cursor-pointer font-bold ${
             isCustomGenre
-              ? "bg-white text-black font-bold"
-              : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+              ? "bg-white text-black"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800"
           }`}
           title="More genres"
         >
@@ -224,25 +218,28 @@ export default function Home() {
         </button>
 
         {genreDropdownOpen && (
-          <div className="absolute top-full left-0 mt-1 w-52 max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-[2000] py-1">
-            {ALL_GENRE_TAGS.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => {
-                  setGenreFilter(tag);
-                  setSelectedEvent(null);
-                  setGenreDropdownOpen(false);
-                }}
-                className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
-                  genreFilter === tag
-                    ? "bg-zinc-700 text-white"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+          <>
+            {/* Backdrop to close dropdown on outside click */}
+            <div
+              className="fixed inset-0 z-[1999]"
+              onClick={() => setGenreDropdownOpen(false)}
+            />
+            <div className="absolute top-full right-0 mt-1 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-[2000] py-1">
+              {DROPDOWN_GENRE_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => handleDropdownSelect(tag)}
+                  className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors cursor-pointer ${
+                    genreFilter === tag
+                      ? "bg-zinc-700 text-white font-bold"
+                      : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

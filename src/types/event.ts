@@ -54,28 +54,22 @@ export const GENRE_CATEGORIES: Record<string, string[]> = {
   dnb: ["drum and bass", "drum & bass", "jungle", "liquid drum and bass", "footwork", "juke", "breakcore"],
 };
 
-// All unique genre tags found across 19hz.info for the dropdown
-export const ALL_GENRE_TAGS: string[] = [
-  "acid", "acid house", "afro house", "afrobeats", "amapiano", "ambient",
-  "baile funk", "bass", "bass house", "bass music", "bassline", "big room", "big room house",
-  "breakcore", "breaks",
-  "chicago house", "circuit house", "club", "club music",
-  "darkwave", "death rock", "deconstructed club", "deep house", "dembow", "disco", "disco house", "downtempo",
-  "drum and bass", "dubstep",
-  "ebm", "edm", "electro", "electro house", "electroclash", "electronic", "electronica", "electropop", "eurodance", "experimental",
-  "footwork", "french house", "funk", "funky house", "future bass", "future beats",
-  "gabber", "ghetto tech", "ghettotech", "glitch", "glitch-hop", "global bass", "goth", "grime",
-  "happy hardcore", "hard dance", "hard groove", "hard house", "hard techno", "hard trance", "hardcore", "hardgroove", "hardstyle", "hardtek",
-  "hip-hop", "house", "hyperpop",
-  "idm", "indie dance", "industrial",
-  "jackin house", "jersey club", "jungle",
-  "latin", "latin club", "latin house", "leftfield", "live electronic", "livetronica",
-  "melodic dubstep", "melodic house", "melodic techno", "miami bass", "minimal", "moombahton", "multigenre edm",
-  "neo perreo", "new beat", "new wave", "nu-disco",
-  "open decks", "organic house",
-  "playa tech", "pop", "pop edm", "post-punk", "progressive house", "progressive trance", "psytrance", "punk",
-  "r&b", "reggaeton", "riddim", "rock",
-  "soca", "soulful house", "synthpop", "synthwave",
-  "tech house", "techno", "trance", "trap", "tribal", "trip-hop",
-  "uk garage", "uplifting trance",
+// Top 15 genre tags by popularity from 19hz (excluding tags already covered by quick filters)
+// These appear in the "+" dropdown for more specific filtering
+export const DROPDOWN_GENRE_TAGS: string[] = [
+  "edm",
+  "synthpop",
+  "hip-hop",
+  "industrial",
+  "goth",
+  "uk garage",
+  "darkwave",
+  "ebm",
+  "disco",
+  "breaks",
+  "hardcore",
+  "hardstyle",
+  "indie dance",
+  "new wave",
+  "downtempo",
 ];
