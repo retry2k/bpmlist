@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import { EventData, REGIONS, GENRE_CATEGORIES } from "@/types/event";
+import { EventData, REGIONS, GENRE_CATEGORIES, ALL_GENRE_TAGS } from "@/types/event";
 import { parseEventDate, isSameDay, isWithinDays } from "@/lib/date-utils";
 import EventPanel from "@/components/EventPanel";
 import EventList from "@/components/EventList";
 
 const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
 
-type GenreFilter = "all" | "house" | "techno" | "dnb" | "other";
 type TimeFilter = "now" | "soon" | "later";
+
+// Quick-filter genre keys (shown as buttons)
+const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
+type QuickGenre = (typeof QUICK_GENRES)[number];
 
 export default function Home() {
   const [regionId, setRegionId] = useState("BayArea");
@@ -19,7 +22,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
-  const [genreFilter, setGenreFilter] = useState<GenreFilter>("all");
+  const [genreFilter, setGenreFilter] = useState<string>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("soon");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -27,8 +30,23 @@ export default function Home() {
   const [locationInput, setLocationInput] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Close genre dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setGenreDropdownOpen(false);
+      }
+    }
+    if (genreDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [genreDropdownOpen]);
 
   const handleLocationSubmit = useCallback(() => {
     if (!locationInput.trim()) return;
@@ -81,24 +99,19 @@ export default function Home() {
   const genreFiltered = useMemo(() => {
     if (genreFilter === "all") return events;
 
-    const genreKeywords = GENRE_CATEGORIES[genreFilter];
-    if (genreFilter === "other") {
-      const allKnownKeywords = [
-        ...GENRE_CATEGORIES.house,
-        ...GENRE_CATEGORIES.techno,
-        ...GENRE_CATEGORIES.dnb,
-      ];
+    // Check if it's a quick-filter group (house, techno, bass, trance, dnb)
+    const groupKeywords = GENRE_CATEGORIES[genreFilter];
+    if (groupKeywords) {
       return events.filter((e) =>
-        !e.tags.some((tag) =>
-          allKnownKeywords.some((kw) => tag.toLowerCase().includes(kw))
+        e.tags.some((tag) =>
+          groupKeywords.some((kw) => tag.toLowerCase().includes(kw))
         )
       );
     }
 
+    // Individual tag from dropdown - exact match
     return events.filter((e) =>
-      e.tags.some((tag) =>
-        genreKeywords.some((kw) => tag.toLowerCase().includes(kw))
-      )
+      e.tags.some((tag) => tag.toLowerCase() === genreFilter.toLowerCase())
     );
   }, [events, genreFilter]);
 
@@ -108,16 +121,14 @@ export default function Home() {
 
     return genreFiltered.filter((e) => {
       const eventDate = parseEventDate(e.date);
-      if (!eventDate) return timeFilter === "later"; // recurring events show in later only
+      if (!eventDate) return timeFilter === "later";
 
       if (timeFilter === "now") {
         return isSameDay(eventDate, today);
       }
       if (timeFilter === "soon") {
-        // Tomorrow through 7 days (exclude today)
         return !isSameDay(eventDate, today) && isWithinDays(eventDate, today, 7);
       }
-      // "later" - all events except today
       return !isSameDay(eventDate, today);
     });
   }, [genreFiltered, timeFilter]);
@@ -131,21 +142,16 @@ export default function Home() {
     setSelectedEvent(event);
   }, []);
 
-  const genres: { key: GenreFilter; label: string }[] = [
-    { key: "all", label: "all" },
-    { key: "house", label: "house" },
-    { key: "techno", label: "techno" },
-    { key: "dnb", label: "dnb" },
-    { key: "other", label: "other" },
-  ];
-
   const timeFilters: { key: TimeFilter; label: string }[] = [
     { key: "now", label: "now" },
     { key: "soon", label: "soon" },
     { key: "later", label: "later" },
   ];
 
-  // Shared sidebar/list content: either event detail or event list
+  // Check if current genreFilter is a custom dropdown selection (not a quick button)
+  const isCustomGenre = genreFilter !== "all" && !GENRE_CATEGORIES[genreFilter];
+
+  // Shared sidebar/list content
   const panelContent = selectedEvent ? (
     <EventPanel
       event={selectedEvent}
@@ -167,14 +173,14 @@ export default function Home() {
     />
   );
 
-  // Time filter buttons (reused in header bar and mobile list)
+  // Time filter buttons (reused in desktop bar and mobile)
   const timeFilterButtons = (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1">
       {timeFilters.map((t) => (
         <button
           key={t.key}
           onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
-          className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
+          className={`px-3.5 py-1.5 text-sm font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
               ? "bg-cyan-500 text-black font-bold"
               : "text-zinc-500 hover:text-white hover:bg-zinc-800"
@@ -186,7 +192,62 @@ export default function Home() {
     </div>
   );
 
-  // Prevent hydration mismatch from Date-dependent rendering
+  // Genre filter buttons + dropdown (reused in desktop bar and mobile)
+  const genreFilterButtons = (compact: boolean = false) => (
+    <div className="flex items-center gap-0.5 relative">
+      {QUICK_GENRES.map((g) => (
+        <button
+          key={g}
+          onClick={() => { setGenreFilter(g); setSelectedEvent(null); setGenreDropdownOpen(false); }}
+          className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1 text-xs"} font-mono rounded transition-colors cursor-pointer ${
+            genreFilter === g
+              ? "bg-white text-black font-bold"
+              : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+          }`}
+        >
+          {g}
+        </button>
+      ))}
+
+      {/* + dropdown button */}
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
+          className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1 text-xs"} font-mono rounded transition-colors cursor-pointer ${
+            isCustomGenre
+              ? "bg-white text-black font-bold"
+              : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+          }`}
+          title="More genres"
+        >
+          {isCustomGenre ? genreFilter : "+"}
+        </button>
+
+        {genreDropdownOpen && (
+          <div className="absolute top-full left-0 mt-1 w-52 max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-[2000] py-1">
+            {ALL_GENRE_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => {
+                  setGenreFilter(tag);
+                  setSelectedEvent(null);
+                  setGenreDropdownOpen(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+                  genreFilter === tag
+                    ? "bg-zinc-700 text-white"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   if (!mounted) {
     return (
       <div className="h-screen w-screen bg-zinc-950 text-white flex items-center justify-center">
@@ -238,35 +299,22 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Filters bar - desktop only (mobile filters are above the list) */}
-      <div className="hidden md:flex items-center gap-1 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/50 z-[1001] flex-shrink-0">
+      {/* Filters bar - desktop only */}
+      <div className="hidden md:flex items-center gap-1.5 px-4 py-2 bg-zinc-900/60 border-b border-zinc-800/50 z-[1001] flex-shrink-0">
         {timeFilterButtons}
 
-        <div className="w-px h-4 bg-zinc-700 mx-1" />
+        <div className="w-px h-5 bg-zinc-700 mx-1.5" />
 
-        {/* Genre filters */}
-        {genres.map((g) => (
-          <button
-            key={g.key}
-            onClick={() => { setGenreFilter(g.key); setSelectedEvent(null); }}
-            className={`px-2.5 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
-              genreFilter === g.key
-                ? "bg-white text-black"
-                : "text-zinc-500 hover:text-white hover:bg-zinc-800"
-            }`}
-          >
-            {g.label}
-          </button>
-        ))}
+        {genreFilterButtons()}
 
         <span className="ml-auto text-zinc-600 text-xs font-mono">
           {loading ? "loading..." : `${filteredEvents.length}`}
         </span>
       </div>
 
-      {/* Main content - horizontal on desktop, vertical on mobile */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
-        {/* Desktop Sidebar (left) */}
+        {/* Desktop Sidebar */}
         {sidebarOpen && (
           <div className="hidden md:block w-80 bg-zinc-900/90 border-r border-zinc-800 overflow-y-auto flex-shrink-0 z-[999]">
             {panelContent}
@@ -285,7 +333,6 @@ export default function Home() {
             userLocation={userLocation}
           />
 
-          {/* Loading overlay */}
           {loading && (
             <div className="absolute inset-0 bg-zinc-950/60 flex items-center justify-center z-[500]">
               <div className="text-center">
@@ -296,48 +343,35 @@ export default function Home() {
           )}
         </div>
 
-        {/* Mobile list area (bottom) */}
+        {/* Mobile list area */}
         <div className="md:hidden flex flex-col h-[45vh] bg-zinc-900/90 border-t border-zinc-800 flex-shrink-0">
-          {/* Mobile filters bar */}
-          <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-800/50 flex-shrink-0">
-            {timeFilterButtons}
-
-            <div className="w-px h-4 bg-zinc-700 mx-1" />
-
-            {genres.map((g) => (
-              <button
-                key={g.key}
-                onClick={() => { setGenreFilter(g.key); setSelectedEvent(null); }}
-                className={`px-2 py-1 text-xs font-mono rounded transition-colors cursor-pointer ${
-                  genreFilter === g.key
-                    ? "bg-white text-black"
-                    : "text-zinc-500 hover:text-white hover:bg-zinc-800"
-                }`}
-              >
-                {g.label}
-              </button>
-            ))}
-
-            <span className="ml-auto text-zinc-600 text-xs font-mono">
-              {loading ? "..." : `${filteredEvents.length}`}
-            </span>
+          {/* Mobile filters */}
+          <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-zinc-800/50 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              {timeFilterButtons}
+              <span className="text-zinc-600 text-xs font-mono">
+                {loading ? "..." : `${filteredEvents.length}`}
+              </span>
+            </div>
+            <div className="flex items-center">
+              {genreFilterButtons(true)}
+            </div>
           </div>
 
-          {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
             {panelContent}
           </div>
         </div>
       </div>
 
-      {/* Footer - hidden on mobile */}
+      {/* Footer */}
       <footer className="hidden md:block px-4 py-1.5 bg-zinc-900/80 border-t border-zinc-800 z-[1001] flex-shrink-0">
         <p className="text-zinc-600 text-[10px] font-mono">
           data via{" "}
           <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2">
             19hz.info
           </a>
-          {" "}&middot; see you on the dance floor :&#93;
+          {" "}&middot; say yes to the afters
         </p>
       </footer>
 

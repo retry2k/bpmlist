@@ -45,9 +45,37 @@ export const REGIONS: Region[] = [
   { id: "BC", name: "Vancouver / BC", slug: "vancouver", center: [49.2827, -123.1207], zoom: 11, state: "British Columbia, Canada" },
 ];
 
+// Top 5 genre groups for quick filter buttons
 export const GENRE_CATEGORIES: Record<string, string[]> = {
-  house: ["house", "deep house", "tech house", "progressive house", "acid house", "minimal house", "afro house", "playa tech"],
-  techno: ["techno", "industrial techno", "acid techno", "minimal techno", "hard techno"],
-  dnb: ["drum and bass", "dnb", "drum & bass", "jungle", "liquid dnb"],
-  other: [],
+  house: ["house", "deep house", "tech house", "progressive house", "acid house", "minimal house", "afro house", "funky house", "latin house", "soulful house", "organic house", "chicago house", "jackin house", "disco house", "circuit house", "electro house", "big room house", "hard house", "bass house", "melodic house", "tropical house", "tribal house", "french house"],
+  techno: ["techno", "hard techno", "melodic techno", "acid techno", "minimal techno", "industrial techno", "big room techno", "dark techno"],
+  bass: ["dubstep", "bass music", "bass", "riddim", "future bass", "melodic dubstep", "trap", "hybrid trap", "uk bass", "speed bass", "tearout", "drumstep"],
+  trance: ["trance", "psytrance", "progressive trance", "uplifting trance", "classic trance", "hard trance", "tech trance", "neo trance", "acid trance"],
+  dnb: ["drum and bass", "drum & bass", "jungle", "liquid drum and bass", "footwork", "juke", "breakcore"],
 };
+
+// All unique genre tags found across 19hz.info for the dropdown
+export const ALL_GENRE_TAGS: string[] = [
+  "acid", "acid house", "afro house", "afrobeats", "amapiano", "ambient",
+  "baile funk", "bass", "bass house", "bass music", "bassline", "big room", "big room house",
+  "breakcore", "breaks",
+  "chicago house", "circuit house", "club", "club music",
+  "darkwave", "death rock", "deconstructed club", "deep house", "dembow", "disco", "disco house", "downtempo",
+  "drum and bass", "dubstep",
+  "ebm", "edm", "electro", "electro house", "electroclash", "electronic", "electronica", "electropop", "eurodance", "experimental",
+  "footwork", "french house", "funk", "funky house", "future bass", "future beats",
+  "gabber", "ghetto tech", "ghettotech", "glitch", "glitch-hop", "global bass", "goth", "grime",
+  "happy hardcore", "hard dance", "hard groove", "hard house", "hard techno", "hard trance", "hardcore", "hardgroove", "hardstyle", "hardtek",
+  "hip-hop", "house", "hyperpop",
+  "idm", "indie dance", "industrial",
+  "jackin house", "jersey club", "jungle",
+  "latin", "latin club", "latin house", "leftfield", "live electronic", "livetronica",
+  "melodic dubstep", "melodic house", "melodic techno", "miami bass", "minimal", "moombahton", "multigenre edm",
+  "neo perreo", "new beat", "new wave", "nu-disco",
+  "open decks", "organic house",
+  "playa tech", "pop", "pop edm", "post-punk", "progressive house", "progressive trance", "psytrance", "punk",
+  "r&b", "reggaeton", "riddim", "rock",
+  "soca", "soulful house", "synthpop", "synthwave",
+  "tech house", "techno", "trance", "trap", "tribal", "trip-hop",
+  "uk garage", "uplifting trance",
+];
