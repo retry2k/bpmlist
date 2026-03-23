@@ -1,6 +1,7 @@
 // Pre-built city coordinate lookup to avoid geocoding API rate limits.
 // Coordinates are approximate city centers - events get jitter added.
-// Add new cities as they appear in 19hz.info data.
+// For cities that appear in multiple regions (e.g. Hollywood CA vs FL),
+// use "CityName|RegionId" keys. The API route checks region-specific keys first.
 
 export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   // === California / Bay Area ===
@@ -71,6 +72,43 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Whittier": { lat: 33.9792, lng: -118.0328 },
   "Torrance": { lat: 33.8358, lng: -118.3406 },
   "Redondo Beach": { lat: 33.8492, lng: -118.3884 },
+  // New LA cities
+  "Bakersfield": { lat: 35.3733, lng: -119.0187 },
+  "Carlsbad": { lat: 33.1581, lng: -117.3506 },
+  "Chula Vista": { lat: 32.6399, lng: -117.1067 },
+  "Del Mar": { lat: 32.9595, lng: -117.2653 },
+  "Downey": { lat: 33.9401, lng: -118.1326 },
+  "Encinitas": { lat: 33.0370, lng: -117.2920 },
+  "Escondido": { lat: 33.1192, lng: -117.0864 },
+  "Hermosa Beach": { lat: 33.8622, lng: -118.3995 },
+  "Johnson Valley": { lat: 34.4033, lng: -116.5925 },
+  "La Habra": { lat: 33.9320, lng: -117.9462 },
+  "Laguna Beach": { lat: 33.5417, lng: -117.7772 },
+  "Lake Hughes": { lat: 34.6769, lng: -118.4454 },
+  "Mountain Center": { lat: 33.7042, lng: -116.7259 },
+  "North Hollywood": { lat: 34.1870, lng: -118.3813 },
+  "Oceanside": { lat: 33.1959, lng: -117.3795 },
+  "Ojai": { lat: 34.4481, lng: -119.2429 },
+  "Ontario": { lat: 34.0633, lng: -117.6509 },
+  "Palm Springs": { lat: 33.8303, lng: -116.5453 },
+  "Rowland Heights": { lat: 33.9761, lng: -117.9053 },
+  "Santa Ana": { lat: 33.7456, lng: -117.8678 },
+  "Santa Barbara": { lat: 34.4208, lng: -119.6982 },
+  "Santa Clarita": { lat: 34.3917, lng: -118.5426 },
+  "Solana Beach": { lat: 32.9912, lng: -117.2712 },
+  "Van Nuys": { lat: 34.1868, lng: -118.4490 },
+  "Ventura": { lat: 34.2783, lng: -119.2932 },
+  "West Hills": { lat: 34.2001, lng: -118.6586 },
+  "Playa del Rey": { lat: 33.9581, lng: -118.4487 },
+  "Inland Empire": { lat: 34.0633, lng: -117.6509 },
+  "Orange County": { lat: 33.7175, lng: -117.8311 },
+  "Temecula": { lat: 33.4936, lng: -117.1484 },
+  "Fullerton": { lat: 33.8703, lng: -117.9242 },
+  "Garden Grove": { lat: 33.7739, lng: -117.9414 },
+  "Newport Beach": { lat: 33.6189, lng: -117.9290 },
+  "Claremont": { lat: 34.0967, lng: -117.7198 },
+  "Norwalk": { lat: 33.9022, lng: -118.0818 },
+  "Oxnard": { lat: 34.1975, lng: -119.1771 },
 
   // === Seattle / Washington ===
   "Seattle": { lat: 47.6062, lng: -122.3321 },
@@ -83,6 +121,17 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "SoDo": { lat: 47.5700, lng: -122.3340 },
   "Pioneer Square": { lat: 47.6020, lng: -122.3320 },
   "Olympia": { lat: 47.0379, lng: -122.9007 },
+  // New Seattle cities
+  "Pasco": { lat: 46.2396, lng: -119.1006 },
+  "George": { lat: 47.0790, lng: -119.8484 },
+  "Darrington": { lat: 48.2554, lng: -121.6012 },
+  "Bellingham": { lat: 48.7519, lng: -122.4787 },
+  "Spokane": { lat: 47.6588, lng: -117.4260 },
+  "Everett": { lat: 47.9790, lng: -122.2021 },
+  "Renton": { lat: 47.4829, lng: -122.2171 },
+  "Redmond (WA)": { lat: 47.6740, lng: -122.1215 },
+  "Bremerton": { lat: 47.5673, lng: -122.6327 },
+  "Kennewick": { lat: 46.2112, lng: -119.1372 },
 
   // === Atlanta / Georgia ===
   "Atlanta": { lat: 33.7490, lng: -84.3880 },
@@ -91,6 +140,22 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Midtown": { lat: 33.7867, lng: -84.3831 },
   "Buckhead": { lat: 33.8381, lng: -84.3799 },
   "Athens": { lat: 33.9519, lng: -83.3576 },
+  // New Atlanta region cities
+  "Birmingham": { lat: 33.5186, lng: -86.8104 },
+  "Chattanooga": { lat: 35.0456, lng: -85.3097 },
+  "Greenville": { lat: 34.8526, lng: -82.3940 },
+  "Augusta": { lat: 33.4735, lng: -81.9748 },
+  "Pelham": { lat: 33.3118, lng: -84.1524 },
+  "Huntsville": { lat: 34.7304, lng: -86.5861 },
+  "Duluth": { lat: 34.0029, lng: -84.1446 },
+  "Sandy Springs": { lat: 33.9304, lng: -84.3733 },
+  "Marietta": { lat: 33.9526, lng: -84.5499 },
+  "Anderson": { lat: 34.5034, lng: -82.6501 },
+  "Alpharetta": { lat: 34.0754, lng: -84.2941 },
+  "Asheville": { lat: 35.5951, lng: -82.5515 },
+  "Columbus (GA)": { lat: 32.4610, lng: -84.9877 },
+  "Savannah": { lat: 32.0809, lng: -81.0912 },
+  "Whitwell": { lat: 35.2017, lng: -85.5191 },
 
   // === Miami / Florida ===
   "Miami": { lat: 25.7617, lng: -80.1918 },
@@ -103,6 +168,25 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Orlando": { lat: 28.5383, lng: -81.3792 },
   "Tampa": { lat: 27.9506, lng: -82.4572 },
   "West Palm Beach": { lat: 26.7153, lng: -80.0534 },
+  // New Miami/FL cities
+  "Okeechobee": { lat: 27.2439, lng: -80.8298 },
+  "Hollywood|Miami": { lat: 26.0112, lng: -80.1495 },
+  "Key Biscayne": { lat: 25.6938, lng: -80.1628 },
+  "Hialeah": { lat: 25.8576, lng: -80.2781 },
+  "Wilton Manors": { lat: 26.1595, lng: -80.1389 },
+  "Kendall": { lat: 25.6795, lng: -80.3468 },
+  "Doral": { lat: 25.8195, lng: -80.3553 },
+  "North Miami": { lat: 25.8901, lng: -80.1867 },
+  "Miami Lakes": { lat: 25.9087, lng: -80.3134 },
+  "Sunrise": { lat: 26.1339, lng: -80.1131 },
+  "Miramar": { lat: 25.9773, lng: -80.2331 },
+  "St. Petersburg": { lat: 27.7676, lng: -82.6403 },
+  "Jacksonville": { lat: 30.3322, lng: -81.6557 },
+  "Gainesville": { lat: 29.6516, lng: -82.3248 },
+  "Delray Beach": { lat: 26.4615, lng: -80.0728 },
+  "Pompano Beach": { lat: 26.2379, lng: -80.1248 },
+  "Boca Raton": { lat: 26.3587, lng: -80.0831 },
+  "Coral Gables": { lat: 25.7215, lng: -80.2684 },
 
   // === Washington DC area ===
   "Washington": { lat: 38.9072, lng: -77.0369 },
@@ -115,6 +199,14 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Silver Spring": { lat: 38.9907, lng: -77.0261 },
   "Columbia": { lat: 39.2037, lng: -76.8610 },
   "Richmond": { lat: 37.5407, lng: -77.4360 },
+  // New DC cities
+  "Frederick": { lat: 39.4143, lng: -77.4105 },
+  "Virginia Beach": { lat: 36.8529, lng: -75.9780 },
+  "Charlottesville": { lat: 38.0293, lng: -78.4767 },
+  "Hanover": { lat: 39.1929, lng: -76.7241 },
+  "Darlington": { lat: 39.6343, lng: -76.2052 },
+  "Norfolk": { lat: 36.8508, lng: -76.2859 },
+  "Annapolis": { lat: 38.9784, lng: -76.4922 },
 
   // === Toronto / Ontario ===
   "Toronto": { lat: 43.6532, lng: -79.3832 },
@@ -127,6 +219,15 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Kitchener": { lat: 43.4516, lng: -80.4925 },
   "London": { lat: 42.9849, lng: -81.2453 },
   "Ottawa": { lat: 45.4215, lng: -75.6972 },
+  // New Toronto cities
+  "Waterloo": { lat: 43.4643, lng: -80.5204 },
+  "Guelph": { lat: 43.5448, lng: -80.2482 },
+  "St. Catharines": { lat: 43.1594, lng: -79.2469 },
+  "Oshawa": { lat: 43.8971, lng: -78.8658 },
+  "Barrie": { lat: 44.3894, lng: -79.6903 },
+  "Kingston": { lat: 44.2312, lng: -76.4860 },
+  "Windsor": { lat: 42.3149, lng: -83.0364 },
+  "Niagara Falls": { lat: 43.0896, lng: -79.0849 },
 
   // === Texas ===
   "Austin": { lat: 30.2672, lng: -97.7431 },
@@ -137,14 +238,40 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "El Paso": { lat: 31.7619, lng: -106.4850 },
   "Denton": { lat: 33.2148, lng: -97.1331 },
   "Plano": { lat: 33.0198, lng: -96.6989 },
+  // New Texas cities
+  "Terlingua": { lat: 29.3225, lng: -103.6166 },
+  "Baird": { lat: 32.3940, lng: -99.3953 },
+  "Midland": { lat: 31.9973, lng: -102.0779 },
+  "McAllen": { lat: 26.2034, lng: -98.2300 },
+  "Grapevine": { lat: 32.9343, lng: -97.0781 },
+  "Lubbock": { lat: 33.5779, lng: -101.8552 },
+  "Irving": { lat: 32.8140, lng: -96.9489 },
+  "Paige": { lat: 30.2105, lng: -97.1058 },
+  "San Marcos": { lat: 29.8833, lng: -97.9414 },
+  "Haltom City": { lat: 32.7990, lng: -97.2692 },
+  "Cedar Park": { lat: 30.5052, lng: -97.8203 },
+  "Arlington (TX)": { lat: 32.7357, lng: -97.1081 },
+  "Corpus Christi": { lat: 27.8006, lng: -97.3964 },
+  "Round Rock": { lat: 30.5083, lng: -97.6789 },
+  "Galveston": { lat: 29.3013, lng: -94.7977 },
+  "The Woodlands": { lat: 30.1658, lng: -95.4613 },
 
   // === Denver / Colorado ===
   "Denver": { lat: 39.7392, lng: -104.9903 },
   "Boulder": { lat: 40.0150, lng: -105.2705 },
   "Aurora": { lat: 39.7294, lng: -104.8319 },
+  "Aurora|Denver": { lat: 39.7294, lng: -104.8319 },
   "Colorado Springs": { lat: 38.8339, lng: -104.8214 },
   "Fort Collins": { lat: 40.5853, lng: -105.0844 },
   "Lakewood": { lat: 39.7047, lng: -105.0814 },
+  // New Denver cities
+  "Longmont": { lat: 40.1672, lng: -105.1019 },
+  "Morrison": { lat: 39.6536, lng: -105.1911 },
+  "Englewood": { lat: 39.6480, lng: -104.9879 },
+  "Greenwood Village": { lat: 39.6172, lng: -104.9509 },
+  "Golden": { lat: 39.7555, lng: -105.2211 },
+  "Broomfield": { lat: 39.9205, lng: -105.0867 },
+  "Littleton": { lat: 39.6133, lng: -105.0166 },
 
   // === Chicago / Illinois ===
   "Chicago": { lat: 41.8781, lng: -87.6298 },
@@ -153,6 +280,20 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Logan Square": { lat: 41.9231, lng: -87.7093 },
   "Pilsen": { lat: 41.8524, lng: -87.6563 },
   "Humboldt Park": { lat: 41.9025, lng: -87.7209 },
+  // New Chicago cities
+  "Palatine": { lat: 42.1103, lng: -88.0343 },
+  "Waukegan": { lat: 42.3636, lng: -87.8448 },
+  "Joliet": { lat: 41.5250, lng: -88.0817 },
+  "Riverside (CHI)": { lat: 41.8350, lng: -87.8231 },
+  "Bedford Park": { lat: 41.7656, lng: -87.8004 },
+  "Aurora|CHI": { lat: 41.7606, lng: -88.3201 },
+  "Oak Park": { lat: 41.8850, lng: -87.7845 },
+  "Lisle": { lat: 41.8012, lng: -88.0748 },
+  "Stone Park": { lat: 41.9056, lng: -87.8834 },
+  "West Chicago": { lat: 41.8848, lng: -88.2040 },
+  "Schaumburg": { lat: 42.0334, lng: -88.0834 },
+  "Naperville": { lat: 41.7508, lng: -88.1535 },
+  "Berwyn": { lat: 41.8506, lng: -87.7937 },
 
   // === Detroit / Michigan ===
   "Detroit": { lat: 42.3314, lng: -83.0458 },
@@ -162,6 +303,14 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Royal Oak": { lat: 42.4895, lng: -83.1446 },
   "Ferndale": { lat: 42.4606, lng: -83.1346 },
   "Grand Rapids": { lat: 42.9634, lng: -85.6681 },
+  // New Detroit cities
+  "New Baltimore": { lat: 42.6812, lng: -82.7363 },
+  "Belleville (MI)": { lat: 42.2048, lng: -83.4855 },
+  "Sterling Heights": { lat: 42.5803, lng: -83.0302 },
+  "Flint": { lat: 43.0125, lng: -83.6875 },
+  "Kalamazoo": { lat: 42.2917, lng: -85.5872 },
+  "Lansing": { lat: 42.7325, lng: -84.5555 },
+  "Ypsilanti": { lat: 42.2411, lng: -83.6130 },
 
   // === Massachusetts / Boston ===
   "Boston": { lat: 42.3601, lng: -71.0589 },
@@ -171,6 +320,16 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Brookline": { lat: 42.3317, lng: -71.1212 },
   "Worcester": { lat: 42.2626, lng: -71.8023 },
   "Providence": { lat: 41.8240, lng: -71.4128 },
+  // New Mass cities
+  "Brighton": { lat: 42.3509, lng: -71.1462 },
+  "Everett (MA)": { lat: 42.4084, lng: -71.0537 },
+  "New Haven": { lat: 41.3083, lng: -72.9279 },
+  "Amherst": { lat: 42.3732, lng: -72.5199 },
+  "Sturbridge": { lat: 42.1084, lng: -72.0787 },
+  "Mansfield": { lat: 42.0334, lng: -71.2190 },
+  "Northampton": { lat: 42.3251, lng: -72.6412 },
+  "Portland (ME)": { lat: 43.6591, lng: -70.2568 },
+  "New Bedford": { lat: 41.6362, lng: -70.9342 },
 
   // === Las Vegas / Nevada ===
   "Las Vegas": { lat: 36.1699, lng: -115.1398 },
@@ -179,6 +338,9 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "The Strip": { lat: 36.1147, lng: -115.1728 },
   "Downtown Las Vegas": { lat: 36.1699, lng: -115.1398 },
   "Reno": { lat: 39.5296, lng: -119.8138 },
+  // New Vegas cities
+  "Pahrump": { lat: 36.2083, lng: -115.9839 },
+  "Laughlin": { lat: 35.1681, lng: -114.5728 },
 
   // === Phoenix / Arizona ===
   "Phoenix": { lat: 33.4484, lng: -112.0740 },
@@ -189,6 +351,14 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Chandler": { lat: 33.3062, lng: -111.8413 },
   "Flagstaff": { lat: 35.1983, lng: -111.6513 },
   "Sedona": { lat: 34.8697, lng: -111.7610 },
+  // New Phoenix cities
+  "Sasabe": { lat: 31.4876, lng: -111.5414 },
+  "Lake Havasu City": { lat: 34.4839, lng: -114.3225 },
+  "Glendale|Phoenix": { lat: 33.5387, lng: -112.1860 },
+  "Gilbert": { lat: 33.3528, lng: -111.7890 },
+  "Peoria": { lat: 33.5806, lng: -112.2374 },
+  "Surprise": { lat: 33.6292, lng: -112.3680 },
+  "Prescott": { lat: 34.5400, lng: -112.4685 },
 
   // === Portland / Oregon ===
   "Portland": { lat: 45.5152, lng: -122.6784 },
@@ -198,6 +368,15 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Beaverton": { lat: 45.4871, lng: -122.8037 },
   "Lake Oswego": { lat: 45.4207, lng: -122.6706 },
   "Corvallis": { lat: 44.5646, lng: -123.2620 },
+  // New Oregon cities
+  "Hood River": { lat: 45.7054, lng: -121.5215 },
+  "Cottage Grove": { lat: 43.7971, lng: -123.0595 },
+  "Talent": { lat: 42.2457, lng: -122.7887 },
+  "Redmond (OR)": { lat: 44.2726, lng: -121.1740 },
+  "Medford": { lat: 42.3265, lng: -122.8756 },
+  "Ashland": { lat: 42.1946, lng: -122.7095 },
+  "Gresham": { lat: 45.4983, lng: -122.4310 },
+  "Hillsboro": { lat: 45.5229, lng: -122.9898 },
 
   // === Vancouver / British Columbia ===
   "Vancouver": { lat: 49.2827, lng: -123.1207 },
@@ -209,6 +388,23 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "North Vancouver": { lat: 49.3200, lng: -123.0724 },
   "Whistler": { lat: 50.1163, lng: -122.9574 },
   "Kelowna": { lat: 49.8880, lng: -119.4960 },
+  // New BC cities
+  "Nanaimo": { lat: 49.1659, lng: -123.9401 },
+  "Nelson": { lat: 49.4928, lng: -117.2948 },
+  "Revelstoke": { lat: 50.9981, lng: -118.1957 },
+  "Squamish": { lat: 49.7016, lng: -123.1558 },
+  "Kamloops": { lat: 50.6745, lng: -120.3273 },
+  "Chilliwack": { lat: 49.1579, lng: -121.9514 },
+  "Sun Peaks": { lat: 50.8837, lng: -119.9003 },
+  "Abbotsford": { lat: 49.0504, lng: -122.3045 },
+  "Campbell River": { lat: 50.0244, lng: -125.2475 },
+  "Salmo": { lat: 49.0713, lng: -117.2750 },
+  "Golden (BC)": { lat: 51.2981, lng: -116.9675 },
+  "Parson": { lat: 51.0597, lng: -116.6333 },
+  "Penticton": { lat: 49.4991, lng: -119.5937 },
+  "Vernon": { lat: 50.2671, lng: -119.2720 },
+  "Prince George": { lat: 53.9171, lng: -122.7497 },
+  "Tofino": { lat: 49.1530, lng: -125.9066 },
 
   // === Iowa / Nebraska ===
   "Des Moines": { lat: 41.5868, lng: -93.6250 },
@@ -216,6 +412,12 @@ export const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
   "Cedar Rapids": { lat: 41.9779, lng: -91.6656 },
   "Omaha": { lat: 41.2565, lng: -95.9345 },
   "Lincoln": { lat: 40.8136, lng: -96.7026 },
+  // New Iowa cities
+  "Davenport": { lat: 41.5236, lng: -90.5776 },
+  "Sioux Falls": { lat: 43.5446, lng: -96.7311 },
+  "Sioux City": { lat: 42.4963, lng: -96.4049 },
+  "Bevington": { lat: 41.5639, lng: -93.7930 },
+  "Libertyville": { lat: 41.0269, lng: -92.0568 },
 
   // Generic fallbacks
   "Bay Area": { lat: 37.7749, lng: -122.4194 },

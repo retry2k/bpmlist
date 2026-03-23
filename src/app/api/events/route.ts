@@ -167,11 +167,15 @@ export async function GET(request: NextRequest) {
     const html = await res.text();
     const events = parseEvents(html);
 
-    // Resolve city coordinates: static lookup
+    // Resolve city coordinates: try region-specific key first, then generic
     const cityCoords = new Map<string, { lat: number; lng: number }>();
     for (const event of events) {
       if (!event.city || cityCoords.has(event.city)) continue;
-      if (CITY_COORDS[event.city]) {
+      // Try region-specific key first (e.g., "Aurora|Denver", "Hollywood|Miami")
+      const regionKey = `${event.city}|${region}`;
+      if (CITY_COORDS[regionKey]) {
+        cityCoords.set(event.city, CITY_COORDS[regionKey]);
+      } else if (CITY_COORDS[event.city]) {
         cityCoords.set(event.city, CITY_COORDS[event.city]);
       }
     }
