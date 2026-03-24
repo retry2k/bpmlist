@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { EventData, REGIONS, GENRE_CATEGORIES, DROPDOWN_GENRE_TAGS } from "@/types/event";
 import { parseEventDate, isSameDay, isWithinDays } from "@/lib/date-utils";
-import EventPanel from "@/components/EventPanel";
+import EventPanel, { isAfterHours } from "@/components/EventPanel";
 import EventList from "@/components/EventList";
 
 const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
 
-type TimeFilter = "now" | "soon" | "later";
+type TimeFilter = "now" | "soon" | "later" | "afters" | "saved";
 
 // Quick-filter genre keys (shown as buttons)
 const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
@@ -62,9 +62,30 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
   const [shareToast, setShareToast] = useState(false);
+  const [savedEventIds, setSavedEventIds] = useState<Set<string>>(new Set());
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
-  useEffect(() => { setMounted(true); }, []);
+  // Load saved events from localStorage
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const saved = localStorage.getItem("bpmlist-saved-events");
+      if (saved) setSavedEventIds(new Set(JSON.parse(saved)));
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggleSaveEvent = useCallback((eventId: string) => {
+    setSavedEventIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      localStorage.setItem("bpmlist-saved-events", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
 
   // Auto-detect user's closest region on first visit
   useEffect(() => {
@@ -171,6 +192,14 @@ export default function Home() {
   const filteredEvents = useMemo(() => {
     const today = new Date();
 
+    if (timeFilter === "saved") {
+      return genreFiltered.filter((e) => savedEventIds.has(e.id));
+    }
+
+    if (timeFilter === "afters") {
+      return genreFiltered.filter((e) => isAfterHours(e));
+    }
+
     return genreFiltered.filter((e) => {
       const eventDate = parseEventDate(e.date);
       if (!eventDate) return timeFilter === "later";
@@ -183,7 +212,7 @@ export default function Home() {
       }
       return !isSameDay(eventDate, today);
     });
-  }, [genreFiltered, timeFilter]);
+  }, [genreFiltered, timeFilter, savedEventIds]);
 
   const mappableEvents = useMemo(
     () => filteredEvents.filter((e) => e.lat != null && e.lng != null),
@@ -199,10 +228,12 @@ export default function Home() {
     window.history.replaceState({}, "", url.toString());
   }, [regionId]);
 
-  const timeFilters: { key: TimeFilter; label: string }[] = [
+  const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
     { key: "now", label: "now" },
     { key: "soon", label: "soon" },
     { key: "later", label: "later" },
+    { key: "afters", label: "afters" },
+    { key: "saved", label: "♡" },
   ];
 
   // Check if current genreFilter is a custom dropdown selection (not a quick button)
@@ -254,6 +285,8 @@ export default function Home() {
       event={selectedEvent}
       onClose={handleCloseEvent}
       onShare={handleShare}
+      isSaved={savedEventIds.has(selectedEvent.id)}
+      onToggleSave={toggleSaveEvent}
     />
   ) : loading ? (
     <div className="flex items-center justify-center py-20">
@@ -280,11 +313,16 @@ export default function Home() {
           onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
           className={`px-3.5 py-1.5 text-sm font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
-              ? "bg-purple-500 text-white font-bold"
+              ? t.key === "saved" ? "bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30"
+              : t.key === "afters" ? "bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30"
+              : "bg-purple-500 text-white font-bold"
               : "text-neutral-500 hover:text-white hover:bg-neutral-800"
           }`}
+          title={t.key === "saved" ? `Saved events (${savedEventIds.size})` : t.key === "afters" ? "After hours (starts after 11pm)" : undefined}
         >
-          {t.label}
+          {t.key === "saved" && savedEventIds.size > 0
+            ? `♡ ${savedEventIds.size}`
+            : t.label}
         </button>
       ))}
     </div>

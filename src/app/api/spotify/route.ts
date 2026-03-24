@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// In-memory cache for RA event artist lookups
-const RA_CACHE = new Map<string, ArtistResult[]>();
+// In-memory cache for RA event data
+const RA_CACHE = new Map<string, { artists: ArtistResult[]; imageUrl: string | null }>();
 
 interface ArtistResult {
   name: string;
@@ -73,10 +73,12 @@ function extractRaEventId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-// Query RA GraphQL API for artist data
-async function fetchRaArtists(eventId: string): Promise<ArtistResult[]> {
+// Query RA GraphQL API for event data (artists + image)
+async function fetchRaEvent(eventId: string): Promise<{ artists: ArtistResult[]; imageUrl: string | null }> {
   const cacheKey = `ra-${eventId}`;
   if (RA_CACHE.has(cacheKey)) return RA_CACHE.get(cacheKey)!;
+
+  const empty = { artists: [], imageUrl: null };
 
   try {
     const res = await fetch("https://ra.co/graphql", {
@@ -89,6 +91,8 @@ async function fetchRaArtists(eventId: string): Promise<ArtistResult[]> {
       body: JSON.stringify({
         query: `{
           event(id: ${eventId}) {
+            flyerFront
+            images { filename }
             artists {
               name
               contentUrl
@@ -104,18 +108,22 @@ async function fetchRaArtists(eventId: string): Promise<ArtistResult[]> {
     });
 
     if (!res.ok) {
-      RA_CACHE.set(cacheKey, []);
-      return [];
+      RA_CACHE.set(cacheKey, empty);
+      return empty;
     }
 
     const data = await res.json();
-    const artists = data?.data?.event?.artists;
-
-    if (!artists || artists.length === 0) {
-      RA_CACHE.set(cacheKey, []);
-      return [];
+    const event = data?.data?.event;
+    if (!event) {
+      RA_CACHE.set(cacheKey, empty);
+      return empty;
     }
 
+    // Get event image: prefer flyerFront, then first image
+    const imageUrl = event.flyerFront
+      || (event.images && event.images.length > 0 ? event.images[0].filename : null);
+
+    const artists = event.artists || [];
     const results: ArtistResult[] = artists.map((a: {
       name?: string;
       contentUrl?: string;
@@ -133,11 +141,12 @@ async function fetchRaArtists(eventId: string): Promise<ArtistResult[]> {
       spotifyUrl: null,
     }));
 
-    RA_CACHE.set(cacheKey, results);
-    return results;
+    const result = { artists: results, imageUrl };
+    RA_CACHE.set(cacheKey, result);
+    return result;
   } catch {
-    RA_CACHE.set(cacheKey, []);
-    return [];
+    RA_CACHE.set(cacheKey, empty);
+    return empty;
   }
 }
 
@@ -150,11 +159,11 @@ export async function GET(request: NextRequest) {
   const raEventId = extractRaEventId(eventUrl);
 
   if (raEventId) {
-    const raArtists = await fetchRaArtists(raEventId);
-    if (raArtists.length > 0) {
+    const raData = await fetchRaEvent(raEventId);
+    if (raData.artists.length > 0 || raData.imageUrl) {
       // Fetch Deezer previews in parallel for all RA artists (name is verified)
       const withPreviews = await Promise.all(
-        raArtists.slice(0, 8).map(async (a) => {
+        raData.artists.slice(0, 8).map(async (a) => {
           const deezer = await searchDeezer(a.name);
           return {
             query: a.name,
@@ -171,7 +180,7 @@ export async function GET(request: NextRequest) {
           };
         }),
       );
-      return NextResponse.json({ source: "ra", artists: withPreviews });
+      return NextResponse.json({ source: "ra", artists: withPreviews, imageUrl: raData.imageUrl });
     }
   }
 
