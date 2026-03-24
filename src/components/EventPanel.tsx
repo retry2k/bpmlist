@@ -80,7 +80,7 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
   }, [playingUrl]);
 
   return (
-    <div className="p-4">
+    <div className="p-5">
       <button
         onClick={onClose}
         className="flex items-center gap-1 text-neutral-500 hover:text-white text-xs font-mono mb-3 cursor-pointer"

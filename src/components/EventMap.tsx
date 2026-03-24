@@ -28,7 +28,7 @@ function getMarkerColor(tags: string[]): string {
   return "#66ff66";
 }
 
-export default function EventMap({ events, center, zoom, onEventClick, hoveredEventId, onLocationRequest, userLocation }: EventMapProps) {
+export default function EventMap({ events, center, zoom, onEventClick, hoveredEventId, onLocationRequest, userLocation, sidebarOpen }: EventMapProps & { sidebarOpen?: boolean }) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -207,6 +207,15 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
     mapRef.current.addLayer(cluster);
     clusterRef.current = cluster;
   }, [events, onEventClick]);
+
+  // Invalidate map size when sidebar toggles
+  useEffect(() => {
+    if (mapRef.current) {
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 50);
+    }
+  }, [sidebarOpen]);
 
   // Handle hover highlighting
   useEffect(() => {

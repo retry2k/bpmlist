@@ -328,6 +328,7 @@ export default function Home() {
             hoveredEventId={hoveredEventId}
             onLocationRequest={() => setLocationModalOpen(true)}
             userLocation={userLocation}
+            sidebarOpen={sidebarOpen}
           />
 
           {loading && (

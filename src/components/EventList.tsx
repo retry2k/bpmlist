@@ -62,7 +62,7 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
       {grouped.map((group) => (
         <div key={group.label}>
           {/* Date header */}
-          <div className="sticky top-0 z-10 px-3 py-1.5 bg-neutral-950/90 backdrop-blur-sm border-b border-neutral-800/50">
+          <div className="sticky top-0 z-10 px-4 py-1.5 bg-neutral-950/90 backdrop-blur-sm border-b border-neutral-800/50">
             <span className="text-neutral-400 text-xs font-mono font-bold uppercase tracking-wider">
               {group.label}
             </span>
@@ -72,7 +72,7 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
           </div>
 
           {/* Events in this date */}
-          <div className="space-y-0.5 py-1">
+          <div className="space-y-0.5 py-1 px-1.5">
             {group.events.map((event) => (
               <div
                 key={event.id}
