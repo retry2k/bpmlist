@@ -34,14 +34,9 @@ html, body {
   border-top-color: rgba(24, 24, 27, 0.95) !important;
 }
 
-/* Base tiles: tint roads/features purple, keep background dark */
+/* Stamen Toner tiles: dark bg with purple roads */
 .map-base-tiles {
-  filter: brightness(0.6) sepia(1) hue-rotate(220deg) saturate(2);
-}
-
-/* Label tiles: bright purple text/lines */
-.map-label-tiles {
-  filter: brightness(1.4) sepia(1) hue-rotate(220deg) saturate(3);
+  filter: invert(1) brightness(0.18) sepia(1) hue-rotate(230deg) saturate(4) contrast(1.6);
 }
 
 /* Leaflet controls dark theme */

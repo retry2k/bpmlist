@@ -86,19 +86,11 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
     new LocationControl().addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    // Base layer: dark with no labels (keeps background dark/black)
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: "abcd",
-      maxZoom: 19,
+    // Base layer: Stamen Toner (high contrast B&W roads) — tinted purple via CSS
+    L.tileLayer("https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://stadiamaps.com/">Stadia</a> &copy; <a href="https://stamen.com/">Stamen</a>',
+      maxZoom: 20,
       className: "map-base-tiles",
-    }).addTo(map);
-
-    // Overlay: labels only (tinted purple via CSS)
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png", {
-      subdomains: "abcd",
-      maxZoom: 19,
-      className: "map-label-tiles",
     }).addTo(map);
 
     mapRef.current = map;
