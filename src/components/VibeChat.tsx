@@ -236,7 +236,7 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
               if (e.key === "Enter" && !isTyping) handleSend(input);
             }}
             placeholder="describe the vibe..."
-            className="flex-1 bg-neutral-800 text-white text-sm font-mono rounded-xl px-3.5 py-2.5 border border-neutral-700 focus:outline-none focus:border-violet-700 placeholder-neutral-600"
+            className="flex-1 bg-neutral-800 text-white text-base md:text-sm font-mono rounded-xl px-3.5 py-2.5 border border-neutral-700 focus:outline-none focus:border-violet-700 placeholder-neutral-600"
           />
           <button
             onClick={() => handleSend(input)}
