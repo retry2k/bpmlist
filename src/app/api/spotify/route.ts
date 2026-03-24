@@ -150,12 +150,13 @@ async function searchSpotify(
 }
 
 // Search Deezer for audio preview (free, no API key, reliable 30-sec previews)
+// Only return if artist name closely matches
 async function searchDeezer(
   name: string,
 ): Promise<{ previewUrl: string; trackName: string } | null> {
   try {
     const res = await fetch(
-      `https://api.deezer.com/search?q=artist:"${encodeURIComponent(name)}"&limit=5`,
+      `https://api.deezer.com/search?q=artist:"${encodeURIComponent(name)}"&limit=10`,
       { signal: AbortSignal.timeout(4000) },
     );
     if (!res.ok) return null;
@@ -164,8 +165,11 @@ async function searchDeezer(
     if (!tracks || tracks.length === 0) return null;
 
     for (const track of tracks) {
-      if (track.preview) {
-        return { previewUrl: track.preview, trackName: track.title };
+      if (track.preview && track.artist?.name) {
+        // Validate artist name matches
+        if (isNameMatch(name, track.artist.name)) {
+          return { previewUrl: track.preview, trackName: track.title };
+        }
       }
     }
     return null;
