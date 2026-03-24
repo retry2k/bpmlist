@@ -313,7 +313,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
         {/* Desktop Sidebar */}
         {sidebarOpen && (
-          <div className="hidden md:block w-80 bg-neutral-900/90 border-r border-neutral-800 overflow-y-auto flex-shrink-0 z-[999]">
+          <div className="hidden md:block w-80 bg-neutral-900/90 border-r border-neutral-800 overflow-y-auto overscroll-contain flex-shrink-0 z-[999]">
             {panelContent}
           </div>
         )}
@@ -356,7 +356,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overscroll-contain">
             {panelContent}
           </div>
         </div>
