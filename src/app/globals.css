@@ -125,6 +125,40 @@ html, body {
   animation: pulse-ring 2s ease-out infinite;
 }
 
+/* Selected event marker - pulsing dot */
+@keyframes selected-pulse {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 var(--marker-color); }
+  50%  { transform: scale(1.15); box-shadow: 0 0 16px 4px var(--marker-color); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 var(--marker-color); }
+}
+
+@keyframes selected-ring {
+  0%   { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.selected-event-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--marker-color);
+  border: 2px solid white;
+  animation: selected-pulse 1.8s ease-in-out infinite;
+  position: relative;
+}
+
+.selected-event-marker::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--marker-color);
+  animation: selected-ring 1.8s ease-out infinite;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

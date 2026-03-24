@@ -16,6 +16,8 @@ interface EventMapProps {
   hoveredEventId: string | null;
   onLocationRequest: () => void;
   userLocation: { lat: number; lng: number; label: string } | null;
+  selectedEvent?: EventData | null;
+  sidebarOpen?: boolean;
 }
 
 function getMarkerColor(tags: string[]): string {
@@ -28,12 +30,13 @@ function getMarkerColor(tags: string[]): string {
   return "#66ff66";
 }
 
-export default function EventMap({ events, center, zoom, onEventClick, hoveredEventId, onLocationRequest, userLocation, sidebarOpen }: EventMapProps & { sidebarOpen?: boolean }) {
+export default function EventMap({ events, center, zoom, onEventClick, hoveredEventId, onLocationRequest, userLocation, selectedEvent, sidebarOpen }: EventMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const selectedMarkerRef = useRef<L.Marker | null>(null);
   const onLocationRequestRef = useRef(onLocationRequest);
   onLocationRequestRef.current = onLocationRequest;
 
@@ -209,6 +212,65 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
     clusterRef.current = cluster;
   }, [events, onEventClick]);
 
+  // Handle selected event: hide cluster, show solo pulsing marker
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Clean up previous selected marker
+    if (selectedMarkerRef.current) {
+      mapRef.current.removeLayer(selectedMarkerRef.current);
+      selectedMarkerRef.current = null;
+    }
+
+    if (selectedEvent && selectedEvent.lat != null && selectedEvent.lng != null) {
+      // Hide the cluster layer
+      if (clusterRef.current) {
+        clusterRef.current.setStyle({ opacity: 0, fillOpacity: 0 });
+        // Hide cluster icons via the container
+        const container = clusterRef.current.getPane()?.parentElement;
+        if (container) {
+          const clusterPane = clusterRef.current.getPane();
+          if (clusterPane) clusterPane.style.opacity = "0";
+        }
+        // Simpler: just remove from map temporarily
+        mapRef.current.removeLayer(clusterRef.current);
+      }
+
+      // Create pulsing marker for selected event
+      const color = getMarkerColor(selectedEvent.tags);
+      const icon = L.divIcon({
+        html: `<div class="selected-event-marker" style="--marker-color: ${color};"></div>`,
+        className: "",
+        iconSize: L.point(28, 28),
+        iconAnchor: L.point(14, 14),
+      });
+
+      const marker = L.marker([selectedEvent.lat, selectedEvent.lng], { icon, zIndexOffset: 1000 });
+      marker.bindTooltip(
+        `<div style="font-family: monospace; font-size: 12px;">
+          <strong>${selectedEvent.title}</strong><br/>
+          ${selectedEvent.venue}${selectedEvent.city ? ` (${selectedEvent.city})` : ""}
+        </div>`,
+        {
+          direction: "top",
+          offset: [0, -16],
+          className: "event-tooltip",
+          permanent: true,
+        }
+      );
+      marker.addTo(mapRef.current);
+      selectedMarkerRef.current = marker;
+
+      // Pan to the selected event
+      mapRef.current.panTo([selectedEvent.lat, selectedEvent.lng], { animate: true });
+    } else {
+      // No selection — restore cluster layer
+      if (clusterRef.current && mapRef.current) {
+        mapRef.current.addLayer(clusterRef.current);
+      }
+    }
+  }, [selectedEvent]);
+
   // Invalidate map size when sidebar toggles
   useEffect(() => {
     if (mapRef.current) {
@@ -218,8 +280,9 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
     }
   }, [sidebarOpen]);
 
-  // Handle hover highlighting
+  // Handle hover highlighting (only when no event is selected)
   useEffect(() => {
+    if (selectedEvent) return;
     markersRef.current.forEach((marker, id) => {
       if (id === hoveredEventId) {
         marker.setStyle({ radius: 10, weight: 3, fillOpacity: 1 });
@@ -231,7 +294,7 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
         marker.closeTooltip();
       }
     });
-  }, [hoveredEventId, events]);
+  }, [hoveredEventId, events, selectedEvent]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
