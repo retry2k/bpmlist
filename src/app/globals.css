@@ -34,10 +34,9 @@ html, body {
   border-top-color: rgba(24, 24, 27, 0.95) !important;
 }
 
-/* Purple roads & labels — tints the labels-only layer to match violet-500 (#8b5cf6) */
-.map-purple-outline {
-  filter: sepia(1) hue-rotate(220deg) saturate(6) brightness(1.6);
-  opacity: 0.7;
+/* Subtle dark purple tint on entire map — roads/labels become muted violet */
+.map-purple-tint {
+  filter: sepia(0.15) hue-rotate(220deg) saturate(1.5) brightness(0.95);
 }
 
 /* Leaflet controls dark theme */
