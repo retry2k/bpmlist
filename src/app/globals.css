@@ -125,38 +125,41 @@ html, body {
   animation: pulse-ring 2s ease-out infinite;
 }
 
-/* Selected event marker - pulsing dot */
-@keyframes selected-pulse {
-  0%   { transform: scale(1); box-shadow: 0 0 0 0 var(--marker-color); }
-  50%  { transform: scale(1.15); box-shadow: 0 0 16px 4px var(--marker-color); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 var(--marker-color); }
+/* Selected event - pulsing rings radiating from marker center */
+@keyframes selected-ring-1 {
+  0%   { width: 0; height: 0; opacity: 0.6; }
+  100% { width: 50px; height: 50px; opacity: 0; }
 }
 
-@keyframes selected-ring {
-  0%   { transform: scale(1); opacity: 0.5; }
-  100% { transform: scale(3); opacity: 0; }
+@keyframes selected-ring-2 {
+  0%   { width: 0; height: 0; opacity: 0.4; }
+  100% { width: 70px; height: 70px; opacity: 0; }
 }
 
-.selected-event-marker {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--marker-color);
-  border: 2px solid white;
-  animation: selected-pulse 1.8s ease-in-out infinite;
-  position: relative;
+.selected-event-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 
-.selected-event-marker::after {
+.selected-event-pulse::before,
+.selected-event-pulse::after {
   content: "";
   position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
   border-radius: 50%;
   border: 2px solid var(--marker-color);
-  animation: selected-ring 1.8s ease-out infinite;
+  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+}
+
+.selected-event-pulse::before {
+  animation: selected-ring-1 1.8s ease-out infinite;
+}
+
+.selected-event-pulse::after {
+  animation: selected-ring-2 1.8s ease-out 0.4s infinite;
 }
 
 /* Scrollbar styling */

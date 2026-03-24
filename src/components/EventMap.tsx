@@ -224,45 +224,21 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
     }
 
     if (selectedEvent && selectedEvent.lat != null && selectedEvent.lng != null) {
-      // Hide the cluster layer by setting its container opacity
-      if (clusterRef.current) {
-        const el = (clusterRef.current as L.MarkerClusterGroup & { _container?: HTMLElement })._container;
-        if (el) el.style.display = "none";
-      }
-
-      // Create pulsing marker for selected event
+      // Create pulsing ring overlay on top of existing markers
       const color = getMarkerColor(selectedEvent.tags);
       const icon = L.divIcon({
-        html: `<div class="selected-event-marker" style="--marker-color: ${color};"></div>`,
+        html: `<div class="selected-event-pulse" style="--marker-color: ${color};"></div>`,
         className: "",
-        iconSize: L.point(28, 28),
-        iconAnchor: L.point(14, 14),
+        iconSize: L.point(0, 0),
+        iconAnchor: L.point(0, 0),
       });
 
-      const marker = L.marker([selectedEvent.lat, selectedEvent.lng], { icon, zIndexOffset: 1000 });
-      marker.bindTooltip(
-        `<div style="font-family: monospace; font-size: 12px;">
-          <strong>${selectedEvent.title}</strong><br/>
-          ${selectedEvent.venue}${selectedEvent.city ? ` (${selectedEvent.city})` : ""}
-        </div>`,
-        {
-          direction: "top",
-          offset: [0, -16],
-          className: "event-tooltip",
-          permanent: true,
-        }
-      );
+      const marker = L.marker([selectedEvent.lat, selectedEvent.lng], { icon, zIndexOffset: 999, interactive: false });
       marker.addTo(map);
       selectedMarkerRef.current = marker;
 
       // Pan to the selected event
       map.panTo([selectedEvent.lat, selectedEvent.lng], { animate: true });
-    } else {
-      // No selection — show cluster layer again
-      if (clusterRef.current) {
-        const el = (clusterRef.current as L.MarkerClusterGroup & { _container?: HTMLElement })._container;
-        if (el) el.style.display = "";
-      }
     }
   }, [selectedEvent]);
 
