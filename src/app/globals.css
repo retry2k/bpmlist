@@ -34,9 +34,14 @@ html, body {
   border-top-color: rgba(24, 24, 27, 0.95) !important;
 }
 
-/* Purple tint on map tiles matching bpmlist accent */
-.leaflet-tile-pane {
-  filter: hue-rotate(250deg) saturate(0.7) brightness(0.9);
+/* Base tiles: tint roads/features purple, keep background dark */
+.map-base-tiles {
+  filter: brightness(0.6) sepia(1) hue-rotate(220deg) saturate(2);
+}
+
+/* Label tiles: bright purple text/lines */
+.map-label-tiles {
+  filter: brightness(1.4) sepia(1) hue-rotate(220deg) saturate(3);
 }
 
 /* Leaflet controls dark theme */
