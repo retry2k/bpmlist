@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { EventData } from "@/types/event";
 import { parseArtists } from "@/lib/artist-parser";
 
@@ -14,6 +14,8 @@ interface ArtistResult {
   spotifyUrl?: string | null;
   bandcampUrl?: string | null;
   websiteUrl?: string | null;
+  previewUrl?: string | null;
+  topTrackName?: string | null;
 }
 
 interface EventPanelProps {
@@ -24,6 +26,8 @@ interface EventPanelProps {
 export default function EventPanel({ event, onClose }: EventPanelProps) {
   const [artists, setArtists] = useState<ArtistResult[]>([]);
   const [loadingArtists, setLoadingArtists] = useState(false);
+  const [playingUrl, setPlayingUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const parsedArtists = parseArtists(event.title);
 
@@ -50,6 +54,33 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const togglePlay = useCallback((previewUrl: string) => {
+    if (playingUrl === previewUrl) {
+      audioRef.current?.pause();
+      setPlayingUrl(null);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    const audio = new Audio(previewUrl);
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+    audio.onended = () => setPlayingUrl(null);
+    audioRef.current = audio;
+    setPlayingUrl(previewUrl);
+  }, [playingUrl]);
 
   const hasAnyLink = (artist: ArtistResult) =>
     artist.raUrl || artist.soundcloudUrl || artist.instagramUrl || artist.spotifyUrl || artist.bandcampUrl || artist.websiteUrl;
@@ -129,11 +160,31 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
                     key={i}
                     className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-neutral-800/50"
                   >
-                    {/* Artist name */}
+                    {/* Play button */}
+                    {artist.previewUrl ? (
+                      <button
+                        onClick={() => togglePlay(artist.previewUrl!)}
+                        className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-500/20 hover:bg-purple-500/40 flex items-center justify-center transition-colors cursor-pointer"
+                        title={playingUrl === artist.previewUrl ? "Pause" : `Play ${artist.topTrackName || "preview"}`}
+                      >
+                        {playingUrl === artist.previewUrl ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-purple-300">
+                            <rect x="6" y="4" width="4" height="16" rx="1" />
+                            <rect x="14" y="4" width="4" height="16" rx="1" />
+                          </svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-purple-300 ml-0.5">
+                            <polygon points="5,3 19,12 5,21" />
+                          </svg>
+                        )}
+                      </button>
+                    ) : (
+                      <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${hasAnyLink(artist) ? "bg-purple-400" : "bg-neutral-600"}`} />
+                    )}
+
+                    {/* Artist name + social icons */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        {/* Dot indicator */}
-                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasAnyLink(artist) ? "bg-purple-400" : "bg-neutral-600"}`} />
 
                         {/* Name - link to RA if available */}
                         {artist.raUrl ? (
@@ -208,6 +259,12 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
                           </a>
                         )}
                       </div>
+                      {/* Now playing track name */}
+                      {artist.topTrackName && playingUrl === artist.previewUrl && (
+                        <p className="text-purple-400/60 text-[10px] font-mono truncate mt-0.5">
+                          ♪ {artist.topTrackName}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

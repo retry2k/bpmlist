@@ -11,6 +11,60 @@ interface ArtistResult {
   spotifyUrl?: string | null;
   bandcampUrl?: string | null;
   websiteUrl?: string | null;
+  previewUrl?: string | null;
+  topTrackName?: string | null;
+}
+
+// In-memory cache for Deezer previews
+const DEEZER_CACHE = new Map<string, { previewUrl: string; trackName: string } | null>();
+
+// Normalize name for comparison
+function normalizeName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function isNameMatch(query: string, resultName: string): boolean {
+  const q = normalizeName(query);
+  const s = normalizeName(resultName);
+  if (q === s) return true;
+  if (q.includes(s) || s.includes(q)) return true;
+  const qWords = q.split(" ").filter(Boolean);
+  const sWords = s.split(" ").filter(Boolean);
+  if (qWords.length > 0 && qWords.every(w => s.includes(w))) return true;
+  if (sWords.length > 0 && sWords.every(w => q.includes(w))) return true;
+  return false;
+}
+
+// Search Deezer for preview - only return if artist name matches
+async function searchDeezer(name: string): Promise<{ previewUrl: string; trackName: string } | null> {
+  const cacheKey = name.toLowerCase();
+  if (DEEZER_CACHE.has(cacheKey)) return DEEZER_CACHE.get(cacheKey)!;
+
+  try {
+    const res = await fetch(
+      `https://api.deezer.com/search?q=artist:"${encodeURIComponent(name)}"&limit=10`,
+      { signal: AbortSignal.timeout(4000) },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const tracks = data.data;
+    if (!tracks || tracks.length === 0) {
+      DEEZER_CACHE.set(cacheKey, null);
+      return null;
+    }
+
+    for (const track of tracks) {
+      if (track.preview && track.artist?.name && isNameMatch(name, track.artist.name)) {
+        const result = { previewUrl: track.preview, trackName: track.title };
+        DEEZER_CACHE.set(cacheKey, result);
+        return result;
+      }
+    }
+    DEEZER_CACHE.set(cacheKey, null);
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // Extract RA event ID from URL like "https://ra.co/events/2391346"
@@ -98,35 +152,47 @@ export async function GET(request: NextRequest) {
   if (raEventId) {
     const raArtists = await fetchRaArtists(raEventId);
     if (raArtists.length > 0) {
-      return NextResponse.json({
-        source: "ra",
-        artists: raArtists.map((a) => ({
-          query: a.name,
-          found: true,
-          name: a.name,
-          raUrl: a.raUrl,
-          soundcloudUrl: a.soundcloudUrl,
-          instagramUrl: a.instagramUrl,
-          bandcampUrl: a.bandcampUrl,
-          websiteUrl: a.websiteUrl,
-          spotifyUrl: a.spotifyUrl,
-        })),
-      });
+      // Fetch Deezer previews in parallel for all RA artists (name is verified)
+      const withPreviews = await Promise.all(
+        raArtists.slice(0, 8).map(async (a) => {
+          const deezer = await searchDeezer(a.name);
+          return {
+            query: a.name,
+            found: true,
+            name: a.name,
+            raUrl: a.raUrl,
+            soundcloudUrl: a.soundcloudUrl,
+            instagramUrl: a.instagramUrl,
+            bandcampUrl: a.bandcampUrl,
+            websiteUrl: a.websiteUrl,
+            spotifyUrl: a.spotifyUrl,
+            previewUrl: deezer?.previewUrl || null,
+            topTrackName: deezer?.trackName || null,
+          };
+        }),
+      );
+      return NextResponse.json({ source: "ra", artists: withPreviews });
     }
   }
 
-  // For non-RA events, just return parsed artist names with no forced lookups
+  // For non-RA events, try Deezer previews with strict name matching
   const artistNames = artistsParam.split(",").map((s) => s.trim()).filter(Boolean);
   if (artistNames.length === 0) {
     return NextResponse.json({ source: "parsed", artists: [] });
   }
 
-  return NextResponse.json({
-    source: "parsed",
-    artists: artistNames.slice(0, 10).map((name) => ({
-      query: name,
-      found: false,
-      name,
-    })),
-  });
+  const results = await Promise.all(
+    artistNames.slice(0, 8).map(async (name) => {
+      const deezer = await searchDeezer(name);
+      return {
+        query: name,
+        found: !!deezer,
+        name,
+        previewUrl: deezer?.previewUrl || null,
+        topTrackName: deezer?.trackName || null,
+      };
+    }),
+  );
+
+  return NextResponse.json({ source: "parsed", artists: results });
 }
