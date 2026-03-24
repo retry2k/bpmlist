@@ -26,13 +26,8 @@ function normalizeName(name: string): string {
 function isNameMatch(query: string, resultName: string): boolean {
   const q = normalizeName(query);
   const s = normalizeName(resultName);
-  if (q === s) return true;
-  if (q.includes(s) || s.includes(q)) return true;
-  const qWords = q.split(" ").filter(Boolean);
-  const sWords = s.split(" ").filter(Boolean);
-  if (qWords.length > 0 && qWords.every(w => s.includes(w))) return true;
-  if (sWords.length > 0 && sWords.every(w => q.includes(w))) return true;
-  return false;
+  // Exact match only
+  return q === s;
 }
 
 // Search Deezer for preview - only return if artist name matches
