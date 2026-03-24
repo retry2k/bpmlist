@@ -6,6 +6,7 @@ import { EventData, REGIONS, GENRE_CATEGORIES, DROPDOWN_GENRE_TAGS } from "@/typ
 import { parseEventDate, isSameDay, isWithinDays } from "@/lib/date-utils";
 import EventPanel, { isAfterHours } from "@/components/EventPanel";
 import EventList from "@/components/EventList";
+import VibeChat from "@/components/VibeChat";
 
 const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
 
@@ -63,6 +64,7 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
   const [shareToast, setShareToast] = useState(false);
+  const [vibeChatOpen, setVibeChatOpen] = useState(false);
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(new Set());
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
@@ -576,6 +578,28 @@ export default function Home() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] bg-violet-700 text-white text-xs font-mono px-4 py-2 rounded-lg shadow-lg animate-fade-in">
           link copied to clipboard
         </div>
+      )}
+
+      {/* Vibe Chat */}
+      {vibeChatOpen ? (
+        <VibeChat
+          events={events}
+          onEventClick={(event) => {
+            handleEventClick(event);
+            setVibeChatOpen(false);
+          }}
+          onClose={() => setVibeChatOpen(false)}
+        />
+      ) : (
+        <button
+          onClick={() => setVibeChatOpen(true)}
+          className="fixed bottom-4 right-4 z-[1999] w-12 h-12 bg-violet-700 hover:bg-violet-600 text-white rounded-full shadow-lg shadow-violet-900/50 flex items-center justify-center transition-all hover:scale-110 cursor-pointer md:bottom-6 md:right-6"
+          title="Vibe check — find events by mood"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
       )}
 
       {/* Location input modal */}
