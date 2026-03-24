@@ -331,7 +331,19 @@ export default function Home() {
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-[1001] flex-shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-black tracking-tighter">
+          <h1
+            className="text-xl font-black tracking-tighter cursor-pointer"
+            onClick={() => {
+              setSelectedEvent(null);
+              setGenreFilter("all");
+              setTimeFilter("soon");
+              setRegionId("BayArea");
+              const url = new URL(window.location.href);
+              url.searchParams.delete("event");
+              url.searchParams.delete("region");
+              window.history.replaceState({}, "", url.pathname);
+            }}
+          >
             bpm<span className="text-purple-500">list</span>
           </h1>
           <span className="hidden sm:inline text-neutral-500 text-xs font-mono">
