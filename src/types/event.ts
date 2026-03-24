@@ -14,6 +14,7 @@ export interface EventData {
   address?: string;
   lat?: number;
   lng?: number;
+  source?: "19hz" | "ticketmaster";
 }
 
 export interface Region {

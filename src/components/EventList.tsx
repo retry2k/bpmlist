@@ -87,6 +87,9 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
                     <p className="text-white text-sm font-medium truncate">{event.title}</p>
                     <p className="text-neutral-500 text-xs font-mono truncate">
                       {event.venue}{event.city ? ` · ${event.city}` : ""} · {event.time}
+                      {event.source === "ticketmaster" && (
+                        <span className="ml-1.5 text-[9px] text-blue-400/60 uppercase">tm</span>
+                      )}
                     </p>
                   </div>
                 </div>

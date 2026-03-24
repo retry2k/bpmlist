@@ -32,14 +32,15 @@ function findClosestRegion(lat: number, lng: number): string {
 }
 
 // Read initial state from URL params or stored home region
-function getInitialParams(): { region: string; eventId: string | null } {
-  if (typeof window === "undefined") return { region: "BayArea", eventId: null };
+function getInitialParams(): { region: string; eventId: string | null; needsDetection: boolean } {
+  if (typeof window === "undefined") return { region: "BayArea", eventId: null, needsDetection: false };
   const params = new URLSearchParams(window.location.search);
   const urlRegion = params.get("region");
   const storedHome = localStorage.getItem("bpmlist-home-region");
   return {
     region: urlRegion || storedHome || "BayArea",
     eventId: params.get("event") || null,
+    needsDetection: !urlRegion && !storedHome,
   };
 }
 
@@ -90,11 +91,10 @@ export default function Home() {
   // Auto-detect user's closest region on first visit
   useEffect(() => {
     // Skip if URL has a region param (shared link) or we already have a stored home
-    if (new URLSearchParams(window.location.search).get("region")) return;
-    if (localStorage.getItem("bpmlist-home-region")) return;
+    if (!initialParams.current.needsDetection) return;
 
-    // Try IP-based geolocation first (no permission needed)
-    fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(5000) })
+    // Use our own geo API (uses Vercel headers on prod, ipapi fallback on dev)
+    fetch("/api/geo", { signal: AbortSignal.timeout(8000) })
       .then((res) => res.json())
       .then((data) => {
         if (data.latitude && data.longitude) {
@@ -141,21 +141,40 @@ export default function Home() {
     setError(null);
     setSelectedEvent(null);
 
-    fetch(`/api/events?region=${regionId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch events");
-        return res.json();
-      })
-      .then((data) => {
-        setEvents(data);
+    // Fetch from both 19hz and Ticketmaster in parallel
+    const fetch19hz = fetch(`/api/events?region=${regionId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .catch(() => []);
+
+    const fetchTm = fetch(`/api/ticketmaster?region=${regionId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .catch(() => []);
+
+    Promise.all([fetch19hz, fetchTm])
+      .then(([hzEvents, tmEvents]) => {
+        // Tag 19hz events with source
+        const tagged19hz = (hzEvents as EventData[]).map((e) => ({ ...e, source: "19hz" as const }));
+
+        // Deduplicate: remove TM events that match a 19hz event (same venue + similar date)
+        const hzKeys = new Set(
+          tagged19hz.map((e) =>
+            `${e.venue.toLowerCase().substring(0, 20)}|${e.date}`
+          )
+        );
+        const uniqueTm = (tmEvents as EventData[]).filter((e) => {
+          const key = `${e.venue.toLowerCase().substring(0, 20)}|${e.date}`;
+          return !hzKeys.has(key);
+        });
+
+        const merged = [...tagged19hz, ...uniqueTm];
+        setEvents(merged);
         setLoading(false);
 
         // Auto-select event from URL param on initial load
         if (pendingEventId.current) {
-          const found = data.find((e: EventData) => e.id === pendingEventId.current);
+          const found = merged.find((e: EventData) => e.id === pendingEventId.current);
           if (found) {
             setSelectedEvent(found);
-            // Clear time filter so the event is visible regardless
             setTimeFilter("later");
           }
           pendingEventId.current = null;
@@ -543,6 +562,10 @@ export default function Home() {
           data via{" "}
           <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
             19hz.info
+          </a>
+          {" "}&middot;{" "}
+          <a href="https://ticketmaster.com" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
+            ticketmaster
           </a>
           {" "}&middot; say yes to the afters
         </p>
