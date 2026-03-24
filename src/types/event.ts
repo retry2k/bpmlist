@@ -24,26 +24,39 @@ export interface Region {
   center: [number, number];
   zoom: number;
   state: string; // State/province for geocoding context
+  has19hz?: boolean; // true if 19hz covers this region (default true for existing regions)
 }
 
 export const REGIONS: Region[] = [
-  { id: "BayArea", name: "San Francisco Bay Area", slug: "bay-area", center: [37.8, -122.2], zoom: 9, state: "California" },
-  { id: "LosAngeles", name: "Los Angeles", slug: "los-angeles", center: [34.0522, -118.2437], zoom: 11, state: "California" },
-  { id: "Seattle", name: "Seattle", slug: "seattle", center: [47.6062, -122.3321], zoom: 11, state: "Washington" },
-  { id: "Atlanta", name: "Atlanta", slug: "atlanta", center: [33.749, -84.388], zoom: 11, state: "Georgia" },
-  { id: "Miami", name: "Miami", slug: "miami", center: [25.7617, -80.1918], zoom: 11, state: "Florida" },
-  { id: "DC", name: "Washington DC", slug: "dc", center: [38.9072, -77.0369], zoom: 11, state: "Washington DC" },
-  { id: "Toronto", name: "Toronto", slug: "toronto", center: [43.6532, -79.3832], zoom: 11, state: "Ontario, Canada" },
-  { id: "Iowa", name: "Iowa / Nebraska", slug: "iowa", center: [41.8781, -93.0977], zoom: 7, state: "Iowa" },
-  { id: "Texas", name: "Texas", slug: "texas", center: [31.9686, -99.9018], zoom: 6, state: "Texas" },
-  { id: "Denver", name: "Denver", slug: "denver", center: [39.7392, -104.9903], zoom: 11, state: "Colorado" },
-  { id: "CHI", name: "Chicago", slug: "chicago", center: [41.8781, -87.6298], zoom: 11, state: "Illinois" },
-  { id: "Detroit", name: "Detroit", slug: "detroit", center: [42.3314, -83.0458], zoom: 11, state: "Michigan" },
-  { id: "Massachusetts", name: "Massachusetts", slug: "massachusetts", center: [42.3601, -71.0589], zoom: 10, state: "Massachusetts" },
-  { id: "LasVegas", name: "Las Vegas", slug: "las-vegas", center: [36.1699, -115.1398], zoom: 11, state: "Nevada" },
-  { id: "Phoenix", name: "Phoenix", slug: "phoenix", center: [33.4484, -112.074], zoom: 11, state: "Arizona" },
-  { id: "ORE", name: "Portland / Oregon", slug: "portland", center: [45.5152, -122.6784], zoom: 11, state: "Oregon" },
-  { id: "BC", name: "Vancouver / BC", slug: "vancouver", center: [49.2827, -123.1207], zoom: 11, state: "British Columbia, Canada" },
+  // 19hz regions (have both 19hz + Ticketmaster data)
+  { id: "BayArea", name: "San Francisco Bay Area", slug: "bay-area", center: [37.8, -122.2], zoom: 9, state: "California", has19hz: true },
+  { id: "LosAngeles", name: "Los Angeles", slug: "los-angeles", center: [34.0522, -118.2437], zoom: 11, state: "California", has19hz: true },
+  { id: "Seattle", name: "Seattle", slug: "seattle", center: [47.6062, -122.3321], zoom: 11, state: "Washington", has19hz: true },
+  { id: "Atlanta", name: "Atlanta", slug: "atlanta", center: [33.749, -84.388], zoom: 11, state: "Georgia", has19hz: true },
+  { id: "Miami", name: "Miami", slug: "miami", center: [25.7617, -80.1918], zoom: 11, state: "Florida", has19hz: true },
+  { id: "DC", name: "Washington DC", slug: "dc", center: [38.9072, -77.0369], zoom: 11, state: "Washington DC", has19hz: true },
+  { id: "Toronto", name: "Toronto", slug: "toronto", center: [43.6532, -79.3832], zoom: 11, state: "Ontario, Canada", has19hz: true },
+  { id: "Iowa", name: "Iowa / Nebraska", slug: "iowa", center: [41.8781, -93.0977], zoom: 7, state: "Iowa", has19hz: true },
+  { id: "Texas", name: "Texas", slug: "texas", center: [31.9686, -99.9018], zoom: 6, state: "Texas", has19hz: true },
+  { id: "Denver", name: "Denver", slug: "denver", center: [39.7392, -104.9903], zoom: 11, state: "Colorado", has19hz: true },
+  { id: "CHI", name: "Chicago", slug: "chicago", center: [41.8781, -87.6298], zoom: 11, state: "Illinois", has19hz: true },
+  { id: "Detroit", name: "Detroit", slug: "detroit", center: [42.3314, -83.0458], zoom: 11, state: "Michigan", has19hz: true },
+  { id: "Massachusetts", name: "Massachusetts", slug: "massachusetts", center: [42.3601, -71.0589], zoom: 10, state: "Massachusetts", has19hz: true },
+  { id: "LasVegas", name: "Las Vegas", slug: "las-vegas", center: [36.1699, -115.1398], zoom: 11, state: "Nevada", has19hz: true },
+  { id: "Phoenix", name: "Phoenix", slug: "phoenix", center: [33.4484, -112.074], zoom: 11, state: "Arizona", has19hz: true },
+  { id: "ORE", name: "Portland / Oregon", slug: "portland", center: [45.5152, -122.6784], zoom: 11, state: "Oregon", has19hz: true },
+  { id: "BC", name: "Vancouver / BC", slug: "vancouver", center: [49.2827, -123.1207], zoom: 11, state: "British Columbia, Canada", has19hz: true },
+  // Ticketmaster-only regions
+  { id: "NYC", name: "New York City", slug: "nyc", center: [40.7128, -74.006], zoom: 11, state: "New York" },
+  { id: "Philadelphia", name: "Philadelphia", slug: "philadelphia", center: [39.9526, -75.1652], zoom: 11, state: "Pennsylvania" },
+  { id: "Minneapolis", name: "Minneapolis", slug: "minneapolis", center: [44.9778, -93.265], zoom: 11, state: "Minnesota" },
+  { id: "Nashville", name: "Nashville", slug: "nashville", center: [36.1627, -86.7816], zoom: 11, state: "Tennessee" },
+  { id: "NewOrleans", name: "New Orleans", slug: "new-orleans", center: [29.9511, -90.0715], zoom: 11, state: "Louisiana" },
+  { id: "SanDiego", name: "San Diego", slug: "san-diego", center: [32.7157, -117.1611], zoom: 11, state: "California" },
+  { id: "Orlando", name: "Orlando", slug: "orlando", center: [28.5383, -81.3792], zoom: 11, state: "Florida" },
+  { id: "Charlotte", name: "Charlotte", slug: "charlotte", center: [35.2271, -80.8431], zoom: 11, state: "North Carolina" },
+  { id: "Pittsburgh", name: "Pittsburgh", slug: "pittsburgh", center: [40.4406, -79.9959], zoom: 11, state: "Pennsylvania" },
+  { id: "Montreal", name: "Montreal", slug: "montreal", center: [45.5017, -73.5673], zoom: 11, state: "Quebec, Canada" },
 ];
 
 // Top 5 genre groups for quick filter buttons

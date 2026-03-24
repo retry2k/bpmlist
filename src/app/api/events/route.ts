@@ -148,6 +148,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid region" }, { status: 400 });
   }
 
+  // Skip 19hz for regions it doesn't cover (Ticketmaster-only regions)
+  if (!regionInfo.has19hz) {
+    return NextResponse.json([]);
+  }
+
   // Check cache
   const cached = DATA_CACHE.get(region);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
