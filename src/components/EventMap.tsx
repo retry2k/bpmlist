@@ -86,11 +86,18 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
     new LocationControl().addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    // Base layer: Stamen Toner (high contrast B&W roads) — tinted purple via CSS
-    L.tileLayer("https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://stadiamaps.com/">Stadia</a> &copy; <a href="https://stamen.com/">Stamen</a>',
-      maxZoom: 20,
-      className: "map-base-tiles",
+    // Base layer: CARTO dark (grayscale dark map)
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Purple outline overlay: same tiles, filtered to show only edges in purple
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      subdomains: "abcd",
+      maxZoom: 19,
+      className: "map-purple-outline",
     }).addTo(map);
 
     mapRef.current = map;
