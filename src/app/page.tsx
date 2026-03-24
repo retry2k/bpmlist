@@ -226,10 +226,23 @@ export default function Home() {
       if (!eventDate) return timeFilter === "later";
 
       if (timeFilter === "now") {
-        return isSameDay(eventDate, today);
+        // "now" = today through end of this Sunday
+        const endOfWeek = new Date(today);
+        const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+        const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+        endOfWeek.setDate(today.getDate() + daysUntilSunday);
+        endOfWeek.setHours(23, 59, 59, 999);
+        const startOfToday = new Date(today);
+        startOfToday.setHours(0, 0, 0, 0);
+        return eventDate >= startOfToday && eventDate <= endOfWeek;
       }
-      // "later" = everything after today
-      return !isSameDay(eventDate, today);
+      // "later" = everything after this week
+      const endOfWeek = new Date(today);
+      const dayOfWeek = today.getDay();
+      const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+      endOfWeek.setDate(today.getDate() + daysUntilSunday);
+      endOfWeek.setHours(23, 59, 59, 999);
+      return eventDate > endOfWeek;
     });
   }, [genreFiltered, timeFilter, savedEventIds]);
 
