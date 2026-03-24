@@ -34,10 +34,10 @@ html, body {
   border-top-color: rgba(24, 24, 27, 0.95) !important;
 }
 
-/* Purple outline overlay on top of grayscale map — deep techno purple */
+/* Purple outline overlay on top of grayscale map — matches violet-500 (#8b5cf6) logo */
 .map-purple-outline {
-  filter: brightness(1.2) contrast(4) sepia(1) hue-rotate(250deg) saturate(8);
-  opacity: 0.18;
+  filter: brightness(1.4) contrast(5) sepia(1) hue-rotate(240deg) saturate(10);
+  opacity: 0.35;
   mix-blend-mode: screen;
 }
 
