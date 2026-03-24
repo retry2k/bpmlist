@@ -314,8 +314,8 @@ export default function Home() {
           className={`px-3.5 py-1.5 text-sm font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
               ? t.key === "saved" ? "bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30"
-              : t.key === "afters" ? "bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30"
-              : "bg-purple-500 text-white font-bold"
+              : t.key === "afters" ? "bg-violet-700/20 text-violet-400 font-bold border border-violet-700/30"
+              : "bg-violet-700 text-white font-bold"
               : "text-neutral-500 hover:text-white hover:bg-neutral-800"
           }`}
           title={t.key === "saved" ? `Saved events (${savedEventIds.size})` : t.key === "afters" ? "After hours (starts after 11pm)" : undefined}
@@ -337,11 +337,11 @@ export default function Home() {
 
   // Genre color map matching dot colors on map/list
   const genreColors: Record<string, { active: string; dot: string }> = {
-    all: { active: "bg-purple-500/20 text-purple-300 border border-purple-500/30", dot: "" },
+    all: { active: "bg-violet-700/20 text-violet-400 border border-violet-700/30", dot: "" },
     house: { active: "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30", dot: "bg-cyan-400" },
     techno: { active: "bg-pink-500/20 text-pink-300 border border-pink-500/30", dot: "bg-pink-500" },
     bass: { active: "bg-orange-400/20 text-orange-300 border border-orange-400/30", dot: "bg-orange-400" },
-    trance: { active: "bg-purple-400/20 text-purple-300 border border-purple-400/30", dot: "bg-purple-400" },
+    trance: { active: "bg-violet-500/20 text-violet-400 border border-violet-500/30", dot: "bg-violet-500" },
     dnb: { active: "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30", dot: "bg-yellow-400" },
   };
 
@@ -374,7 +374,7 @@ export default function Home() {
           onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
           className={`${compact ? "px-2.5 py-1 text-sm" : "px-3 py-1.5 text-sm"} font-mono rounded transition-colors cursor-pointer font-bold ${
             isCustomGenre
-              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+              ? "bg-violet-700/20 text-violet-400 border border-violet-700/30"
               : "text-neutral-400 hover:text-white hover:bg-neutral-800"
           }`}
           title="More genres"
@@ -414,7 +414,7 @@ export default function Home() {
     return (
       <div className="h-screen w-screen bg-neutral-950 text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-neutral-600 border-t-purple-400 rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-8 h-8 border-2 border-neutral-600 border-t-violet-500 rounded-full animate-spin mx-auto mb-3" />
           <p className="text-neutral-400 text-sm font-mono">loading...</p>
         </div>
       </div>
@@ -439,7 +439,7 @@ export default function Home() {
               window.history.replaceState({}, "", url.pathname);
             }}
           >
-            bpm<span className="text-purple-500">list</span>
+            bpm<span className="text-violet-500">list</span>
           </h1>
           <span className="hidden sm:inline text-neutral-500 text-xs font-mono">
             find your bpm
@@ -511,7 +511,7 @@ export default function Home() {
           {loading && (
             <div className="absolute inset-0 bg-neutral-950/60 flex items-center justify-center z-[500]">
               <div className="text-center">
-                <div className="w-8 h-8 border-2 border-neutral-600 border-t-purple-400 rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-neutral-600 border-t-violet-500 rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-neutral-400 text-sm font-mono">fetching events...</p>
               </div>
             </div>
@@ -552,7 +552,7 @@ export default function Home() {
 
       {/* Share toast */}
       {shareToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] bg-purple-500 text-white text-xs font-mono px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] bg-violet-700 text-white text-xs font-mono px-4 py-2 rounded-lg shadow-lg animate-fade-in">
           link copied to clipboard
         </div>
       )}
@@ -569,7 +569,7 @@ export default function Home() {
               onKeyDown={(e) => { if (e.key === "Enter") handleLocationSubmit(); }}
               placeholder="Enter address or city..."
               autoFocus
-              className="w-full bg-neutral-800 text-white text-sm font-mono rounded px-3 py-2 border border-neutral-600 focus:outline-none focus:border-purple-500 placeholder-neutral-500"
+              className="w-full bg-neutral-800 text-white text-sm font-mono rounded px-3 py-2 border border-neutral-600 focus:outline-none focus:border-violet-700 placeholder-neutral-500"
             />
             <div className="flex gap-2 mt-3">
               <button
@@ -581,7 +581,7 @@ export default function Home() {
               <button
                 onClick={handleLocationSubmit}
                 disabled={locationLoading || !locationInput.trim()}
-                className="flex-1 px-3 py-1.5 text-xs font-mono text-white bg-purple-500 hover:bg-purple-400 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                className="flex-1 px-3 py-1.5 text-xs font-mono text-white bg-violet-700 hover:bg-violet-500 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-bold"
               >
                 {locationLoading ? "finding..." : "find me"}
               </button>

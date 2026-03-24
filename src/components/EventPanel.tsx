@@ -212,7 +212,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
           {/* Calendar button */}
           <button
             onClick={() => downloadICS(event)}
-            className="p-1.5 rounded text-neutral-500 hover:text-purple-300 transition-colors cursor-pointer"
+            className="p-1.5 rounded text-neutral-500 hover:text-violet-400 transition-colors cursor-pointer"
             title="Add to calendar"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -228,7 +228,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
           {onShare && (
             <button
               onClick={onShare}
-              className="p-1.5 rounded text-neutral-500 hover:text-purple-300 transition-colors cursor-pointer"
+              className="p-1.5 rounded text-neutral-500 hover:text-violet-400 transition-colors cursor-pointer"
               title="Share this event"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -261,7 +261,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
               {event.date} {event.time}
             </p>
             {isAfterHours(event) && (
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 flex-shrink-0">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-violet-700/20 text-violet-400 border border-violet-700/30 flex-shrink-0">
                 AFTERS
               </span>
             )}
@@ -314,7 +314,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
 
             {loadingArtists ? (
               <div className="flex items-center gap-2 py-2">
-                <div className="w-3 h-3 border border-neutral-600 border-t-purple-400 rounded-full animate-spin" />
+                <div className="w-3 h-3 border border-neutral-600 border-t-violet-500 rounded-full animate-spin" />
                 <span className="text-neutral-500 text-xs font-mono">finding artists...</span>
               </div>
             ) : (
@@ -328,22 +328,22 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
                     {artist.previewUrl ? (
                       <button
                         onClick={() => togglePlay(artist.previewUrl!)}
-                        className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-500/20 hover:bg-purple-500/40 flex items-center justify-center transition-colors cursor-pointer"
+                        className="flex-shrink-0 w-7 h-7 rounded-full bg-violet-700/20 hover:bg-violet-700/40 flex items-center justify-center transition-colors cursor-pointer"
                         title={playingUrl === artist.previewUrl ? "Pause" : `Play ${artist.topTrackName || "preview"}`}
                       >
                         {playingUrl === artist.previewUrl ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-purple-300">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-violet-400">
                             <rect x="6" y="4" width="4" height="16" rx="1" />
                             <rect x="14" y="4" width="4" height="16" rx="1" />
                           </svg>
                         ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-purple-300 ml-0.5">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-violet-400 ml-0.5">
                             <polygon points="5,3 19,12 5,21" />
                           </svg>
                         )}
                       </button>
                     ) : (
-                      <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${hasAnyLink(artist) ? "bg-purple-400" : "bg-neutral-600"}`} />
+                      <div className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${hasAnyLink(artist) ? "bg-violet-500" : "bg-neutral-600"}`} />
                     )}
 
                     {/* Artist name + social icons */}
@@ -354,7 +354,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
                             href={artist.raUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-white text-sm hover:text-purple-300 transition-colors truncate"
+                            className="text-white text-sm hover:text-violet-400 transition-colors truncate"
                           >
                             {artist.name || artist.query}
                           </a>
@@ -401,7 +401,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
                         )}
                       </div>
                       {artist.topTrackName && playingUrl === artist.previewUrl && (
-                        <p className="text-purple-400/60 text-[10px] font-mono truncate mt-0.5">
+                        <p className="text-violet-500/60 text-[10px] font-mono truncate mt-0.5">
                           ♪ {artist.topTrackName}
                         </p>
                       )}
@@ -419,7 +419,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
               href={event.eventUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 text-xs font-mono underline underline-offset-2"
+              className="text-violet-500 hover:text-violet-400 text-xs font-mono underline underline-offset-2"
             >
               event page &rarr;
             </a>
@@ -430,7 +430,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 text-xs font-mono underline underline-offset-2"
+              className="text-violet-500 hover:text-violet-400 text-xs font-mono underline underline-offset-2"
             >
               {link.label.toLowerCase()} &rarr;
             </a>
