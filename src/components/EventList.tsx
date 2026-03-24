@@ -15,7 +15,7 @@ function getDotColor(tags: string[]): string {
   if (/techno|industrial/.test(tagStr)) return "bg-pink-500";
   if (/house|deep house|tech house|progressive/.test(tagStr)) return "bg-cyan-400";
   if (/drum|bass|dnb|jungle/.test(tagStr)) return "bg-yellow-400";
-  if (/trance/.test(tagStr)) return "bg-purple-400";
+  if (/trance/.test(tagStr)) return "bg-violet-500";
   if (/dubstep|bass music/.test(tagStr)) return "bg-orange-400";
   return "bg-green-400";
 }
