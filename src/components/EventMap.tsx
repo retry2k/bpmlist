@@ -214,26 +214,20 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
 
   // Handle selected event: hide cluster, show solo pulsing marker
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
 
     // Clean up previous selected marker
     if (selectedMarkerRef.current) {
-      mapRef.current.removeLayer(selectedMarkerRef.current);
+      map.removeLayer(selectedMarkerRef.current);
       selectedMarkerRef.current = null;
     }
 
     if (selectedEvent && selectedEvent.lat != null && selectedEvent.lng != null) {
-      // Hide the cluster layer
+      // Hide the cluster layer by setting its container opacity
       if (clusterRef.current) {
-        clusterRef.current.setStyle({ opacity: 0, fillOpacity: 0 });
-        // Hide cluster icons via the container
-        const container = clusterRef.current.getPane()?.parentElement;
-        if (container) {
-          const clusterPane = clusterRef.current.getPane();
-          if (clusterPane) clusterPane.style.opacity = "0";
-        }
-        // Simpler: just remove from map temporarily
-        mapRef.current.removeLayer(clusterRef.current);
+        const el = (clusterRef.current as L.MarkerClusterGroup & { _container?: HTMLElement })._container;
+        if (el) el.style.display = "none";
       }
 
       // Create pulsing marker for selected event
@@ -258,15 +252,16 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
           permanent: true,
         }
       );
-      marker.addTo(mapRef.current);
+      marker.addTo(map);
       selectedMarkerRef.current = marker;
 
       // Pan to the selected event
-      mapRef.current.panTo([selectedEvent.lat, selectedEvent.lng], { animate: true });
+      map.panTo([selectedEvent.lat, selectedEvent.lng], { animate: true });
     } else {
-      // No selection — restore cluster layer
-      if (clusterRef.current && mapRef.current) {
-        mapRef.current.addLayer(clusterRef.current);
+      // No selection — show cluster layer again
+      if (clusterRef.current) {
+        const el = (clusterRef.current as L.MarkerClusterGroup & { _container?: HTMLElement })._container;
+        if (el) el.style.display = "";
       }
     }
   }, [selectedEvent]);
