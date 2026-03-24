@@ -53,8 +53,10 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,6 +64,32 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Track visual viewport for mobile keyboard handling
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      setViewportHeight(vv.height);
+      // Scroll container to keep input visible
+      if (containerRef.current) {
+        containerRef.current.style.height = `${Math.min(vv.height - 16, 500)}px`;
+        containerRef.current.style.top = `${vv.offsetTop + vv.height - Math.min(vv.height - 16, 500) - 8}px`;
+        containerRef.current.style.bottom = "auto";
+      }
+    };
+
+    // Set initial
+    handleResize();
+
+    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
   }, []);
 
   const handleSend = useCallback(
@@ -90,7 +118,11 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
   );
 
   return (
-    <div className="fixed bottom-4 right-4 z-[2000] w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div
+      ref={containerRef}
+      className="fixed bottom-2 right-2 left-2 md:left-auto md:right-4 md:bottom-4 z-[2000] md:w-[360px] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+      style={{ height: viewportHeight ? `${Math.min(viewportHeight - 16, 500)}px` : "500px" }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 flex-shrink-0">
         <div className="flex items-center gap-2">
