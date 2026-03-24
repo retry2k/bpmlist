@@ -249,7 +249,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
             <img
               src={flyerUrl}
               alt={event.title}
-              className="w-full h-auto max-h-64 object-cover"
+              className="w-full h-auto object-contain"
               loading="lazy"
             />
           </div>
