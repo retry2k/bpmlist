@@ -207,8 +207,8 @@ export default function Home() {
       if (timeFilter === "now") {
         return isSameDay(eventDate, today);
       }
-      // "later" = everything not today
-      return true;
+      // "later" = everything after today
+      return !isSameDay(eventDate, today);
     });
   }, [genreFiltered, timeFilter, savedEventIds]);
 
