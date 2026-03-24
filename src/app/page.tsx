@@ -326,7 +326,17 @@ export default function Home() {
   ) : error ? (
     <p className="text-red-400 text-sm font-mono p-4">{error}</p>
   ) : filteredEvents.length === 0 ? (
-    <p className="text-neutral-500 text-sm font-mono p-4">no events found</p>
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      {timeFilter === "saved" ? (
+        <>
+          <span className="text-2xl text-neutral-600 mb-2">♡</span>
+          <p className="text-neutral-500 text-sm font-mono">your favorited events will show here</p>
+          <p className="text-neutral-600 text-xs font-mono mt-1">tap the heart on any event to save it</p>
+        </>
+      ) : (
+        <p className="text-neutral-500 text-sm font-mono">no events found</p>
+      )}
+    </div>
   ) : (
     <EventList
       events={filteredEvents}
@@ -342,7 +352,7 @@ export default function Home() {
         <button
           key={t.key}
           onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
-          className={`px-3.5 py-1.5 text-sm font-mono rounded-md transition-colors cursor-pointer ${
+          className={`${t.key === "saved" ? "px-4 py-1.5 text-base ml-2" : "px-3.5 py-1.5 text-sm"} font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
               ? t.key === "saved" ? "bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30"
               : t.key === "afters" ? "bg-violet-700/20 text-violet-400 font-bold border border-violet-700/30"
@@ -568,13 +578,30 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto overscroll-contain">
             {panelContent}
           </div>
+
+          {/* Mobile footer */}
+          <div className="flex items-center justify-between px-3 py-1.5 border-t border-neutral-800/50 flex-shrink-0">
+            <p className="text-neutral-600 text-[9px] font-mono">
+              powered by{" "}
+              <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 underline underline-offset-2">19hz.info</a>
+              {" "}&middot;{" "}
+              <a href="https://ticketmaster.com" target="_blank" rel="noopener noreferrer" className="text-neutral-500 underline underline-offset-2">ticketmaster</a>
+              {" "}&middot; say yes to the afters
+            </p>
+            <a
+              href="mailto:bpmlists@gmail.com"
+              className="text-neutral-600 text-[9px] font-mono hover:text-neutral-400 underline underline-offset-2 ml-2 flex-shrink-0"
+            >
+              contact
+            </a>
+          </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="hidden md:block px-4 py-1.5 bg-neutral-900/90 border-t border-neutral-800 z-[1001] flex-shrink-0">
+      {/* Footer - desktop */}
+      <footer className="hidden md:flex items-center justify-between px-4 py-1.5 bg-neutral-900/90 border-t border-neutral-800 z-[1001] flex-shrink-0">
         <p className="text-neutral-600 text-[10px] font-mono">
-          data via{" "}
+          powered by{" "}
           <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
             19hz.info
           </a>
@@ -584,6 +611,12 @@ export default function Home() {
           </a>
           {" "}&middot; say yes to the afters
         </p>
+        <a
+          href="mailto:bpmlists@gmail.com"
+          className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 underline underline-offset-2"
+        >
+          contact
+        </a>
       </footer>
 
       {/* Share toast */}
