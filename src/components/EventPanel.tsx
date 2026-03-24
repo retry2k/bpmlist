@@ -21,9 +21,10 @@ interface ArtistResult {
 interface EventPanelProps {
   event: EventData;
   onClose: () => void;
+  onShare?: () => void;
 }
 
-export default function EventPanel({ event, onClose }: EventPanelProps) {
+export default function EventPanel({ event, onClose, onShare }: EventPanelProps) {
   const [artists, setArtists] = useState<ArtistResult[]>([]);
   const [loadingArtists, setLoadingArtists] = useState(false);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
@@ -87,15 +88,31 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
 
   return (
     <div className="p-5 pb-20">
-      <button
-        onClick={onClose}
-        className="flex items-center gap-1 text-neutral-500 hover:text-white text-xs font-mono mb-3 cursor-pointer"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        back to list
-      </button>
+      <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1 text-neutral-500 hover:text-white text-xs font-mono cursor-pointer"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          back to list
+        </button>
+        {onShare && (
+          <button
+            onClick={onShare}
+            className="flex items-center gap-1.5 text-neutral-500 hover:text-purple-300 text-xs font-mono cursor-pointer transition-colors"
+            title="Share this event"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+            share
+          </button>
+        )}
+      </div>
 
       <div className="space-y-3">
         <div>

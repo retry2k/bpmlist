@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { EventData, REGIONS, GENRE_CATEGORIES, DROPDOWN_GENRE_TAGS } from "@/types/event";
 import { parseEventDate, isSameDay, isWithinDays } from "@/lib/date-utils";
@@ -15,8 +15,19 @@ type TimeFilter = "now" | "soon" | "later";
 const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
 type QuickGenre = (typeof QUICK_GENRES)[number];
 
+// Read initial state from URL params
+function getInitialParams(): { region: string; eventId: string | null } {
+  if (typeof window === "undefined") return { region: "BayArea", eventId: null };
+  const params = new URLSearchParams(window.location.search);
+  return {
+    region: params.get("region") || "BayArea",
+    eventId: params.get("event") || null,
+  };
+}
+
 export default function Home() {
-  const [regionId, setRegionId] = useState("BayArea");
+  const initialParams = useRef(getInitialParams());
+  const [regionId, setRegionId] = useState(initialParams.current.region);
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +42,8 @@ export default function Home() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
+  const [shareToast, setShareToast] = useState(false);
+  const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -74,6 +87,17 @@ export default function Home() {
       .then((data) => {
         setEvents(data);
         setLoading(false);
+
+        // Auto-select event from URL param on initial load
+        if (pendingEventId.current) {
+          const found = data.find((e: EventData) => e.id === pendingEventId.current);
+          if (found) {
+            setSelectedEvent(found);
+            // Clear time filter so the event is visible regardless
+            setTimeFilter("later");
+          }
+          pendingEventId.current = null;
+        }
       })
       .catch((err) => {
         setError(err.message);
@@ -127,7 +151,12 @@ export default function Home() {
 
   const handleEventClick = useCallback((event: EventData) => {
     setSelectedEvent(event);
-  }, []);
+    // Update URL with event and region for sharing
+    const url = new URL(window.location.href);
+    url.searchParams.set("region", regionId);
+    url.searchParams.set("event", event.id);
+    window.history.replaceState({}, "", url.toString());
+  }, [regionId]);
 
   const timeFilters: { key: TimeFilter; label: string }[] = [
     { key: "now", label: "now" },
@@ -138,11 +167,52 @@ export default function Home() {
   // Check if current genreFilter is a custom dropdown selection (not a quick button)
   const isCustomGenre = genreFilter !== "all" && !GENRE_CATEGORIES[genreFilter];
 
+  // Clear event from URL when closing panel
+  const handleCloseEvent = useCallback(() => {
+    setSelectedEvent(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("event");
+    window.history.replaceState({}, "", url.toString());
+  }, []);
+
+  // Share current event URL
+  const handleShare = useCallback(async () => {
+    if (!selectedEvent) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("region", regionId);
+    url.searchParams.set("event", selectedEvent.id);
+    const shareUrl = url.toString();
+
+    // Try native share API first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: selectedEvent.title,
+          text: `${selectedEvent.title} @ ${selectedEvent.venue} - ${selectedEvent.date}`,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // User cancelled or not supported, fall through to clipboard
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareToast(true);
+      setTimeout(() => setShareToast(false), 2000);
+    } catch {
+      // ignore
+    }
+  }, [selectedEvent, regionId]);
+
   // Shared sidebar/list content
   const panelContent = selectedEvent ? (
     <EventPanel
       event={selectedEvent}
-      onClose={() => setSelectedEvent(null)}
+      onClose={handleCloseEvent}
+      onShare={handleShare}
     />
   ) : loading ? (
     <div className="flex items-center justify-center py-20">
@@ -372,6 +442,13 @@ export default function Home() {
           {" "}&middot; say yes to the afters
         </p>
       </footer>
+
+      {/* Share toast */}
+      {shareToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] bg-purple-500 text-white text-xs font-mono px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+          link copied to clipboard
+        </div>
+      )}
 
       {/* Location input modal */}
       {locationModalOpen && (
