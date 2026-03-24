@@ -335,22 +335,38 @@ export default function Home() {
     setGenreDropdownOpen(false);
   }, []);
 
+  // Genre color map matching dot colors on map/list
+  const genreColors: Record<string, { active: string; dot: string }> = {
+    all: { active: "bg-purple-500/20 text-purple-300 border border-purple-500/30", dot: "" },
+    house: { active: "bg-cyan-400/20 text-cyan-300 border border-cyan-400/30", dot: "bg-cyan-400" },
+    techno: { active: "bg-pink-500/20 text-pink-300 border border-pink-500/30", dot: "bg-pink-500" },
+    bass: { active: "bg-orange-400/20 text-orange-300 border border-orange-400/30", dot: "bg-orange-400" },
+    trance: { active: "bg-purple-400/20 text-purple-300 border border-purple-400/30", dot: "bg-purple-400" },
+    dnb: { active: "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30", dot: "bg-yellow-400" },
+  };
+
   // Genre filter buttons + dropdown (reused in desktop bar and mobile)
   const genreFilterButtons = (compact: boolean = false) => (
     <div className="flex items-center gap-1.5 relative">
-      {QUICK_GENRES.map((g) => (
-        <button
-          key={g}
-          onClick={() => { setGenreFilter(g); setSelectedEvent(null); setGenreDropdownOpen(false); }}
-          className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs"} font-mono rounded transition-colors cursor-pointer ${
-            genreFilter === g
-              ? "bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30"
-              : "text-neutral-500 hover:text-white hover:bg-neutral-800"
-          }`}
-        >
-          {g}
-        </button>
-      ))}
+      {QUICK_GENRES.map((g) => {
+        const colors = genreColors[g] || genreColors.all;
+        return (
+          <button
+            key={g}
+            onClick={() => { setGenreFilter(g); setSelectedEvent(null); setGenreDropdownOpen(false); }}
+            className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs"} font-mono rounded transition-colors cursor-pointer flex items-center gap-1.5 ${
+              genreFilter === g
+                ? `${colors.active} font-bold`
+                : "text-neutral-500 hover:text-white hover:bg-neutral-800"
+            }`}
+          >
+            {g !== "all" && (
+              <span className={`w-1.5 h-1.5 rounded-full ${colors.dot} ${genreFilter === g ? "opacity-100" : "opacity-40"}`} />
+            )}
+            {g}
+          </button>
+        );
+      })}
 
       {/* + dropdown button */}
       <div className="relative">
