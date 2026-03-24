@@ -9,7 +9,7 @@ import EventList from "@/components/EventList";
 
 const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
 
-type TimeFilter = "now" | "soon" | "later" | "afters" | "saved";
+type TimeFilter = "now" | "later" | "afters" | "saved";
 
 // Quick-filter genre keys (shown as buttons)
 const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
@@ -53,7 +53,7 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string>("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("soon");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("later");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
@@ -207,10 +207,8 @@ export default function Home() {
       if (timeFilter === "now") {
         return isSameDay(eventDate, today);
       }
-      if (timeFilter === "soon") {
-        return !isSameDay(eventDate, today) && isWithinDays(eventDate, today, 7);
-      }
-      return !isSameDay(eventDate, today);
+      // "later" = everything not today
+      return true;
     });
   }, [genreFiltered, timeFilter, savedEventIds]);
 
@@ -230,7 +228,6 @@ export default function Home() {
 
   const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
     { key: "now", label: "now" },
-    { key: "soon", label: "soon" },
     { key: "later", label: "later" },
     { key: "afters", label: "afters" },
     { key: "saved", label: "♡" },
@@ -431,7 +428,7 @@ export default function Home() {
             onClick={() => {
               setSelectedEvent(null);
               setGenreFilter("all");
-              setTimeFilter("soon");
+              setTimeFilter("later");
               setRegionId(homeRegion);
               const url = new URL(window.location.href);
               url.searchParams.delete("event");
