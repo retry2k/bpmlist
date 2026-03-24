@@ -4,12 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { EventData } from "@/types/event";
 import { parseArtists } from "@/lib/artist-parser";
 
-interface SpotifyArtist {
+interface ArtistResult {
   query: string;
   found: boolean;
   name?: string;
-  spotifyUrl?: string;
-  imageUrl?: string | null;
+  spotifyUrl?: string | null;
+  soundcloudUrl?: string | null;
   previewUrl?: string | null;
   topTrackName?: string | null;
 }
@@ -20,14 +20,14 @@ interface EventPanelProps {
 }
 
 export default function EventPanel({ event, onClose }: EventPanelProps) {
-  const [artists, setArtists] = useState<SpotifyArtist[]>([]);
+  const [artists, setArtists] = useState<ArtistResult[]>([]);
   const [loadingArtists, setLoadingArtists] = useState(false);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const parsedArtists = parseArtists(event.title);
 
-  // Fetch Spotify data when event changes
+  // Fetch artist data when event changes
   useEffect(() => {
     if (parsedArtists.length === 0) {
       setArtists([]);
@@ -58,19 +58,16 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
   }, []);
 
   const togglePlay = useCallback((previewUrl: string) => {
-    // If already playing this track, stop it
     if (playingUrl === previewUrl) {
       audioRef.current?.pause();
       setPlayingUrl(null);
       return;
     }
 
-    // Stop current track
     if (audioRef.current) {
       audioRef.current.pause();
     }
 
-    // Play new track
     const audio = new Audio(previewUrl);
     audio.volume = 0.5;
     audio.play().catch(() => {});
@@ -174,40 +171,46 @@ export default function EventPanel({ event, onClose }: EventPanelProps) {
                       </button>
                     ) : (
                       <div className="flex-shrink-0 w-7 h-7 rounded-full bg-neutral-800/50 flex items-center justify-center">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-neutral-600">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-600">
                           <circle cx="12" cy="12" r="10" />
+                          <line x1="8" y1="15" x2="16" y2="15" />
                         </svg>
                       </div>
                     )}
 
-                    {/* Artist name */}
+                    {/* Artist name + social buttons */}
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        {artist.found && artist.spotifyUrl ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-sm truncate">
+                          {artist.name || artist.query}
+                        </span>
+
+                        {/* Spotify button - only if name matched */}
+                        {artist.spotifyUrl && (
                           <a
                             href={artist.spotifyUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-white text-sm hover:text-purple-300 transition-colors truncate"
-                          >
-                            {artist.name || artist.query}
-                          </a>
-                        ) : (
-                          <span className="text-neutral-400 text-sm truncate">
-                            {artist.query}
-                          </span>
-                        )}
-                        {/* Spotify icon - always visible when found */}
-                        {artist.found && artist.spotifyUrl && (
-                          <a
-                            href={artist.spotifyUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-shrink-0 text-green-500/60 hover:text-green-400 transition-colors"
+                            className="flex-shrink-0 text-green-500/70 hover:text-green-400 transition-colors"
                             title="Open on Spotify"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                            </svg>
+                          </a>
+                        )}
+
+                        {/* SoundCloud button */}
+                        {artist.soundcloudUrl && (
+                          <a
+                            href={artist.soundcloudUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-shrink-0 text-orange-500/70 hover:text-orange-400 transition-colors"
+                            title="Open on SoundCloud"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M1.175 12.225c-.051 0-.094.046-.101.1l-.233 2.154.233 2.105c.007.058.05.098.101.098.05 0 .09-.04.099-.098l.255-2.105-.27-2.154c-.009-.058-.05-.1-.1-.1m-.899.828c-.06 0-.091.037-.104.094L0 14.479l.172 1.282c.013.06.045.094.104.094.057 0 .09-.038.104-.094l.2-1.282-.2-1.332c-.014-.057-.047-.094-.104-.094m1.79-1.065c-.067 0-.114.053-.121.12l-.214 2.371.214 2.257c.007.067.054.12.121.12.065 0 .113-.053.12-.12l.244-2.257-.244-2.371c-.007-.067-.055-.12-.12-.12m.938-.136c-.076 0-.132.063-.137.132l-.198 2.507.198 2.345c.005.075.061.132.137.132.075 0 .13-.057.137-.132l.224-2.345-.224-2.507c-.007-.075-.062-.132-.137-.132m.938-.043c-.083 0-.145.067-.152.145l-.182 2.55.182 2.41c.007.083.069.145.152.145.082 0 .144-.062.152-.145l.207-2.41-.207-2.55c-.008-.083-.07-.145-.152-.145m1.015-.182c-.089 0-.158.075-.163.158l-.167 2.732.167 2.46c.005.09.074.158.163.158.088 0 .157-.068.163-.158l.188-2.46-.188-2.732c-.006-.089-.075-.158-.163-.158m1.097-.376c-.098 0-.173.083-.178.176l-.15 2.919.15 2.479c.005.098.08.176.178.176.097 0 .172-.078.178-.176l.17-2.479-.17-2.919c-.006-.098-.081-.176-.178-.176m1.046-.01c-.105 0-.187.09-.19.188l-.137 2.929.137 2.496c.003.105.085.188.19.188s.186-.083.19-.188l.155-2.496-.155-2.929c-.004-.105-.085-.188-.19-.188m1.13-.204c-.112 0-.2.094-.204.2l-.12 3.133.12 2.512c.004.112.092.2.204.2.11 0 .2-.088.204-.2l.136-2.512-.136-3.133c-.004-.112-.094-.2-.204-.2m1.096.135c-.12 0-.213.1-.215.213l-.107 2.998.107 2.52c.002.12.095.213.215.213.118 0 .212-.093.215-.213l.12-2.52-.12-2.998c-.003-.12-.097-.213-.215-.213m1.12-.527c-.124 0-.22.105-.222.222l-.093 3.525.093 2.524c.002.124.098.222.222.222.123 0 .22-.098.222-.222l.106-2.524-.106-3.525c-.002-.124-.099-.222-.222-.222m1.101-.093c-.132 0-.234.11-.235.232l-.08 3.618.08 2.53c.001.132.103.232.235.232.13 0 .233-.1.235-.232l.09-2.53-.09-3.618c-.002-.132-.105-.232-.235-.232m1.16-.261c-.14 0-.248.115-.249.245l-.065 3.879.065 2.533c.001.14.109.245.249.245.139 0 .247-.105.249-.245l.074-2.533-.074-3.879c-.002-.14-.11-.245-.249-.245m1.102.136c-.147 0-.261.12-.262.255l-.051 3.743.051 2.533c.001.147.115.255.262.255.146 0 .26-.108.262-.255l.058-2.533-.058-3.743c-.002-.147-.116-.255-.262-.255m1.19-.481c-.038-.01-.078-.014-.118-.014-.153 0-.278.128-.28.265l-.036 3.958.036 2.532c.002.153.127.265.28.265.152 0 .277-.112.28-.265l.04-2.532-.04-3.958c-.002-.145-.119-.26-.27-.265m.96-.164c-.16 0-.29.133-.291.278l-.024 4.122.024 2.526c.001.16.131.278.291.278.16 0 .289-.118.291-.278l.027-2.526-.027-4.122c-.002-.16-.131-.278-.291-.278m2.08.636c-.02-.163-.156-.273-.305-.273-.021 0-.04 0-.06.004-.163.02-.283.16-.283.309v.013l-.012 3.442.012 2.52c.002.163.141.285.305.285.163 0 .303-.122.305-.285l.014-2.52-.014-3.47v-.012l.037-.013zm.674-.071c-.172 0-.311.145-.312.307l.001 3.504-.001 2.517c.001.172.14.307.312.307.17 0 .31-.135.312-.307l.003-2.517-.003-3.504c-.002-.172-.142-.307-.312-.307m3.487 1.152c-.23 0-.443.04-.642.108-.134-1.506-1.4-2.682-2.942-2.682-.373 0-.735.072-1.069.199-.125.048-.158.098-.159.193v5.275c.001.1.079.182.175.19h4.637c.958 0 1.736-.784 1.736-1.748 0-.964-.778-1.535-1.736-1.535" />
                             </svg>
                           </a>
                         )}
