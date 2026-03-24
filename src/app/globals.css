@@ -34,9 +34,9 @@ html, body {
   border-top-color: rgba(24, 24, 27, 0.95) !important;
 }
 
-/* Subtle purple tint on map tiles */
+/* Purple tint on map tiles matching bpmlist accent */
 .leaflet-tile-pane {
-  filter: hue-rotate(240deg) saturate(0.3) brightness(0.95);
+  filter: hue-rotate(250deg) saturate(0.7) brightness(0.9);
 }
 
 /* Leaflet controls dark theme */
