@@ -15,12 +15,30 @@ type TimeFilter = "now" | "soon" | "later";
 const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
 type QuickGenre = (typeof QUICK_GENRES)[number];
 
-// Read initial state from URL params
+// Find closest region to a lat/lng
+function findClosestRegion(lat: number, lng: number): string {
+  let closest = REGIONS[0].id;
+  let minDist = Infinity;
+  for (const r of REGIONS) {
+    const dlat = lat - r.center[0];
+    const dlng = lng - r.center[1];
+    const dist = dlat * dlat + dlng * dlng;
+    if (dist < minDist) {
+      minDist = dist;
+      closest = r.id;
+    }
+  }
+  return closest;
+}
+
+// Read initial state from URL params or stored home region
 function getInitialParams(): { region: string; eventId: string | null } {
   if (typeof window === "undefined") return { region: "BayArea", eventId: null };
   const params = new URLSearchParams(window.location.search);
+  const urlRegion = params.get("region");
+  const storedHome = localStorage.getItem("bpmlist-home-region");
   return {
-    region: params.get("region") || "BayArea",
+    region: urlRegion || storedHome || "BayArea",
     eventId: params.get("event") || null,
   };
 }
@@ -28,6 +46,7 @@ function getInitialParams(): { region: string; eventId: string | null } {
 export default function Home() {
   const initialParams = useRef(getInitialParams());
   const [regionId, setRegionId] = useState(initialParams.current.region);
+  const [homeRegion, setHomeRegion] = useState(initialParams.current.region);
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +65,28 @@ export default function Home() {
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Auto-detect user's closest region on first visit
+  useEffect(() => {
+    // Skip if URL has a region param (shared link) or we already have a stored home
+    if (new URLSearchParams(window.location.search).get("region")) return;
+    if (localStorage.getItem("bpmlist-home-region")) return;
+
+    // Try IP-based geolocation first (no permission needed)
+    fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(5000) })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.latitude && data.longitude) {
+          const closest = findClosestRegion(data.latitude, data.longitude);
+          localStorage.setItem("bpmlist-home-region", closest);
+          setHomeRegion(closest);
+          setRegionId(closest);
+        }
+      })
+      .catch(() => {
+        // Silently fail — keep default
+      });
+  }, []);
 
   const handleLocationSubmit = useCallback(() => {
     if (!locationInput.trim()) return;
@@ -337,7 +378,7 @@ export default function Home() {
               setSelectedEvent(null);
               setGenreFilter("all");
               setTimeFilter("soon");
-              setRegionId("BayArea");
+              setRegionId(homeRegion);
               const url = new URL(window.location.href);
               url.searchParams.delete("event");
               url.searchParams.delete("region");
