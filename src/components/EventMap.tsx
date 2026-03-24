@@ -91,7 +91,6 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
       subdomains: "abcd",
       maxZoom: 19,
-      className: "map-purple-tint",
     }).addTo(map);
 
     mapRef.current = map;

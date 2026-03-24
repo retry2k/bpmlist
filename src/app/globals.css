@@ -34,10 +34,6 @@ html, body {
   border-top-color: rgba(24, 24, 27, 0.95) !important;
 }
 
-/* Subtle dark purple tint on entire map — roads/labels become muted violet */
-.map-purple-tint {
-  filter: sepia(0.15) hue-rotate(220deg) saturate(1.5) brightness(0.95);
-}
 
 /* Leaflet controls dark theme */
 .leaflet-control-zoom a {
