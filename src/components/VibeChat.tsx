@@ -13,7 +13,6 @@ interface VibeChatProps {
 interface ChatMessage {
   role: "bot" | "user";
   text: string;
-  emoji?: string;
   events?: EventData[];
 }
 
@@ -35,12 +34,12 @@ function getDotColor(tags: string[]): string {
 }
 
 const QUICK_VIBES = [
-  { label: "dark & heavy", emoji: "🖤" },
-  { label: "chill house", emoji: "🌊" },
-  { label: "rave", emoji: "👾" },
-  { label: "funky disco", emoji: "🕺" },
-  { label: "late night", emoji: "🌙" },
-  { label: "trippy", emoji: "🍄" },
+  "dark & heavy",
+  "chill house",
+  "rave",
+  "funky disco",
+  "late night",
+  "trippy",
 ];
 
 export default function VibeChat({ events, onEventClick, onClose }: VibeChatProps) {
@@ -48,7 +47,6 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
     {
       role: "bot",
       text: "what mood are you in tonight?",
-      emoji: "👋",
     },
   ]);
   const [input, setInput] = useState("");
@@ -107,7 +105,6 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
         const botMsg: ChatMessage = {
           role: "bot",
           text: result.response,
-          emoji: result.emoji,
           events: result.events,
         };
         setMessages((prev) => [...prev, botMsg]);
@@ -125,12 +122,9 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🎧</span>
-          <div>
-            <p className="text-white text-sm font-bold font-mono">vibe check</p>
-            <p className="text-neutral-500 text-[10px] font-mono">describe your mood, i'll find the event</p>
-          </div>
+        <div>
+          <p className="text-base font-black tracking-tighter">bpm<span className="text-violet-500">list</span></p>
+          <p className="text-neutral-500 text-[10px] font-mono">describe your mood</p>
         </div>
         <button
           onClick={onClose}
@@ -154,9 +148,6 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
                   : "bg-neutral-800 border border-neutral-700/50 text-neutral-200"
               } rounded-2xl px-3.5 py-2.5 text-sm font-mono`}
             >
-              {msg.role === "bot" && msg.emoji && (
-                <span className="mr-1.5">{msg.emoji}</span>
-              )}
               {msg.text}
 
               {/* Event suggestions */}
@@ -211,11 +202,11 @@ export default function VibeChat({ events, onEventClick, onClose }: VibeChatProp
           <div className="flex flex-wrap gap-1.5 pt-1">
             {QUICK_VIBES.map((v) => (
               <button
-                key={v.label}
-                onClick={() => handleSend(v.label)}
+                key={v}
+                onClick={() => handleSend(v)}
                 className="px-3 py-1.5 text-xs font-mono text-neutral-400 hover:text-white bg-neutral-800/50 hover:bg-neutral-700/50 border border-neutral-700/40 hover:border-violet-700/40 rounded-full transition-colors cursor-pointer"
               >
-                {v.emoji} {v.label}
+                {v}
               </button>
             ))}
           </div>

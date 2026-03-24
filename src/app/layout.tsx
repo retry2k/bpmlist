@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "bpmlist - find your bpm",
-  description: "Find electronic music events across North America. Real-time map of EDM events powered by 19hz.info.",
+  description: "find electronic shows in your neighborhood. real time map powered by 19hz.info",
 };
 
 export default function RootLayout({
