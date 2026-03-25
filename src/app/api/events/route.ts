@@ -266,26 +266,12 @@ export async function GET(request: NextRequest) {
       return null;
     }
 
-    // Resolve city coordinates — and geocode unknown cities
+    // Resolve city coordinates
     const cityCoords = new Map<string, { lat: number; lng: number }>();
-    const unknownCities: string[] = [];
     for (const event of events) {
       if (!event.city || cityCoords.has(event.city)) continue;
       const coords = resolveCityCoords(event.city);
-      if (coords) {
-        cityCoords.set(event.city, coords);
-      } else {
-        unknownCities.push(event.city);
-      }
-    }
-
-    // Geocode up to 10 unknown cities
-    const uniqueUnknownCities = [...new Set(unknownCities)].slice(0, 10);
-    for (const city of uniqueUnknownCities) {
-      const coords = await geocodeCity(city, regionInfo.state);
-      if (coords) {
-        cityCoords.set(city, coords);
-      }
+      if (coords) cityCoords.set(event.city, coords);
     }
 
     // Collect unique venues that need geocoding
@@ -301,51 +287,41 @@ export async function GET(request: NextRequest) {
       venuesNeedingGeocode.push({ venue: event.venue, city: event.city });
     }
 
-    // Geocode up to 30 unknown venues per request (was 5)
-    const MAX_GEOCODES = 30;
+    // Progressive geocoding: only 5 Nominatim calls per request (~5.5s)
+    // Cache builds up over multiple requests
+    const MAX_GEOCODES = 5;
     const toGeocode = venuesNeedingGeocode.slice(0, MAX_GEOCODES);
     for (const { venue, city } of toGeocode) {
       await geocodeVenue(venue, city, regionInfo.state);
     }
 
-    // Collect RA event IDs for events that still don't have coords
-    // (no static, no geocode cache, no city coords)
+    // RA venue coords: fetch up to 5 in parallel (~1-2s) for events
+    // that still lack coords after static + Nominatim
     const raEventsToFetch: { index: number; raId: string }[] = [];
     events.forEach((event, i) => {
-      // Skip if we already have coords from static or geocode
       if (event.venue && event.city) {
         const venueKey = `${event.venue}|${event.city}`;
         if (VENUE_COORDS[venueKey]) return;
         if (VENUE_GEOCODE_CACHE.get(venueKey)) return;
       }
-
-      // Check if this event or its links have an RA URL
+      // Check for RA URL in event link or alternate links
       const raId = extractRaEventId(event.eventUrl);
-      if (raId) {
-        raEventsToFetch.push({ index: i, raId });
-        return;
-      }
+      if (raId) { raEventsToFetch.push({ index: i, raId }); return; }
       for (const link of event.links) {
         const linkRaId = extractRaEventId(link.url);
-        if (linkRaId) {
-          raEventsToFetch.push({ index: i, raId: linkRaId });
-          return;
-        }
+        if (linkRaId) { raEventsToFetch.push({ index: i, raId: linkRaId }); return; }
       }
     });
 
-    // Fetch RA venue coords in parallel (limit to 15 to avoid overwhelming RA)
     const raResults = new Map<number, { lat: number; lng: number; address: string }>();
-    const raToFetch = raEventsToFetch.slice(0, 15);
+    const raToFetch = raEventsToFetch.slice(0, 5);
     if (raToFetch.length > 0) {
-      const results = await Promise.allSettled(
+      await Promise.allSettled(
         raToFetch.map(async ({ index, raId }) => {
           const coords = await fetchRaVenueCoords(raId);
           if (coords) raResults.set(index, coords);
         })
       );
-      // Suppress unused variable warning
-      void results;
     }
 
     // Assign coordinates to events
