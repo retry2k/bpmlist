@@ -5,7 +5,7 @@ import { REGIONS } from "@/types/event";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { VENUE_COORDS } from "@/lib/venue-coords";
 
-// Persistent venue geocode cache (survives across requests, separate from data cache)
+// Persistent venue geocode cache (survives across requests on same instance)
 const VENUE_GEOCODE_CACHE = new Map<string, { lat: number; lng: number; address: string } | null>();
 
 // Cache for RA venue coordinates
@@ -20,25 +20,29 @@ async function nominatimSearch(query: string): Promise<{ lat: number; lng: numbe
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   lastGeocode = Date.now();
 
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "bpmlist/1.0 (event map)" },
-    signal: AbortSignal.timeout(4000),
-  });
-  const data = await res.json();
-  if (data && data.length > 0) {
-    const item = data[0];
-    const parts = (item.display_name || "").split(",").map((s: string) => s.trim());
-    return {
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
-      address: parts.slice(0, 3).join(", "),
-    };
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "bpmlist/1.0 (event map)" },
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await res.json();
+    if (data && data.length > 0) {
+      const item = data[0];
+      const parts = (item.display_name || "").split(",").map((s: string) => s.trim());
+      return {
+        lat: parseFloat(item.lat),
+        lng: parseFloat(item.lon),
+        address: parts.slice(0, 3).join(", "),
+      };
+    }
+  } catch {
+    // ignore
   }
   return null;
 }
 
-// Try to extract a street address from an event page's meta tags
+// Scrape address from event page (Eventbrite, RA, etc.)
 async function scrapeAddressFromUrl(eventUrl: string): Promise<string | null> {
   if (!eventUrl) return null;
   try {
@@ -49,13 +53,10 @@ async function scrapeAddressFromUrl(eventUrl: string): Promise<string | null> {
     });
     if (!res.ok) return null;
     const html = await res.text();
-    // Look for address in meta description or structured data
-    // Eventbrite: "at 532 S Western Ave, Los Angeles, CA"
-    // RA: address in JSON-LD or meta tags
     const addressPatterns = [
-      /at\s+(\d+[^,]+,\s*[A-Za-z\s]+,\s*[A-Z]{2})/i,           // "at 123 Main St, City, ST"
-      /"address":\s*"([^"]+)"/i,                                    // JSON "address": "..."
-      /"streetAddress":\s*"([^"]+)"/i,                              // JSON-LD streetAddress
+      /at\s+(\d+[^,]+,\s*[A-Za-z\s]+,\s*[A-Z]{2})/i,
+      /"address":\s*"([^"]+)"/i,
+      /"streetAddress":\s*"([^"]+)"/i,
       /location[^"]*"[^"]*(\d+\s+[A-Za-z\s]+(?:St|Ave|Blvd|Rd|Dr|Way|Pl|Ct|Ln|Pkwy|Hwy)[^,]*,\s*[A-Za-z\s]+,\s*[A-Z]{2})/i,
     ];
     for (const pattern of addressPatterns) {
@@ -68,73 +69,54 @@ async function scrapeAddressFromUrl(eventUrl: string): Promise<string | null> {
   return null;
 }
 
-async function geocodeVenue(
+// Quick geocode: just venue + city + state (used on hot path)
+async function geocodeVenueQuick(
   venueName: string,
   city: string,
   state: string,
-  eventUrl?: string,
 ): Promise<{ lat: number; lng: number; address: string } | null> {
   const key = `${venueName}|${city}`;
   if (VENUE_GEOCODE_CACHE.has(key)) return VENUE_GEOCODE_CACHE.get(key)!;
 
-  try {
-    // Strategy 1: Try scraping the actual address from the event page
-    if (eventUrl) {
-      const scrapedAddress = await scrapeAddressFromUrl(eventUrl);
-      if (scrapedAddress) {
-        const result = await nominatimSearch(scrapedAddress);
-        if (result) {
-          VENUE_GEOCODE_CACHE.set(key, result);
-          return result;
-        }
-      }
-    }
-
-    // Strategy 2: Geocode venue + city + state
-    const result = await nominatimSearch(`${venueName}, ${city}, ${state}`);
-    if (result) {
-      VENUE_GEOCODE_CACHE.set(key, result);
-      return result;
-    }
-
-    // Strategy 3: Try venue + state only (city might be wrong in 19hz data)
-    const resultNoCity = await nominatimSearch(`${venueName}, ${state}`);
-    if (resultNoCity) {
-      VENUE_GEOCODE_CACHE.set(key, resultNoCity);
-      return resultNoCity;
-    }
-  } catch {
-    // ignore
+  const result = await nominatimSearch(`${venueName}, ${city}, ${state}`);
+  if (result) {
+    VENUE_GEOCODE_CACHE.set(key, result);
+    return result;
   }
   VENUE_GEOCODE_CACHE.set(key, null);
   return null;
 }
 
-// Geocode a city name to get coordinates
-async function geocodeCity(
+// Deep geocode: scrape event page + try without city (used in background)
+async function geocodeVenueDeep(
+  venueName: string,
   city: string,
   state: string,
-): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const now = Date.now();
-    const wait = Math.max(0, 1100 - (now - lastGeocode));
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    lastGeocode = Date.now();
+  eventUrl: string,
+): Promise<void> {
+  const key = `${venueName}|${city}`;
+  // Skip if already geocoded successfully
+  if (VENUE_GEOCODE_CACHE.get(key)) return;
 
-    const query = `${city}, ${state}`;
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&featuretype=city`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "bpmlist/1.0 (event map)" },
-      signal: AbortSignal.timeout(4000),
-    });
-    const data = await res.json();
-    if (data && data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  try {
+    // Strategy 1: Scrape address from event page
+    const scrapedAddress = await scrapeAddressFromUrl(eventUrl);
+    if (scrapedAddress) {
+      const result = await nominatimSearch(scrapedAddress);
+      if (result) {
+        VENUE_GEOCODE_CACHE.set(key, result);
+        return;
+      }
+    }
+
+    // Strategy 2: Try venue + state only (city might be wrong)
+    const result = await nominatimSearch(`${venueName}, ${state}`);
+    if (result) {
+      VENUE_GEOCODE_CACHE.set(key, result);
     }
   } catch {
-    // ignore
+    // ignore — background task, don't crash
   }
-  return null;
 }
 
 // Extract RA event ID from URL
@@ -301,14 +283,11 @@ export async function GET(request: NextRequest) {
     const html = await res.text();
     const events = parseEvents(html);
 
-    // Helper: resolve city coords handling compound names like "Venice/Los Angeles"
+    // Resolve city coords from static lookup
     function resolveCityCoords(rawCity: string): { lat: number; lng: number } | null {
-      // Try region-specific key first
       const regionKey = `${rawCity}|${region}`;
       if (CITY_COORDS[regionKey]) return CITY_COORDS[regionKey];
       if (CITY_COORDS[rawCity]) return CITY_COORDS[rawCity];
-
-      // Handle compound city names: "Venice/Los Angeles" -> try "Venice" first
       if (rawCity.includes("/")) {
         const parts = rawCity.split("/").map(p => p.trim());
         for (const part of parts) {
@@ -320,7 +299,6 @@ export async function GET(request: NextRequest) {
       return null;
     }
 
-    // Resolve city coordinates
     const cityCoords = new Map<string, { lat: number; lng: number }>();
     for (const event of events) {
       if (!event.city || cityCoords.has(event.city)) continue;
@@ -328,7 +306,9 @@ export async function GET(request: NextRequest) {
       if (coords) cityCoords.set(event.city, coords);
     }
 
-    // Collect unique venues that need geocoding (with their event URL for address scraping)
+    // ---- HOT PATH: fast geocoding (3 Nominatim + 5 RA parallel) ----
+
+    // Quick Nominatim geocode: 3 venues max (~3.3s)
     const venuesNeedingGeocode: { venue: string; city: string; eventUrl: string }[] = [];
     const seenVenues = new Set<string>();
     for (const event of events) {
@@ -341,29 +321,25 @@ export async function GET(request: NextRequest) {
       venuesNeedingGeocode.push({ venue: event.venue, city: event.city, eventUrl: event.eventUrl });
     }
 
-    // Progressive geocoding: only 5 venues per request
-    // Each venue tries: 1) scrape address from event page, 2) venue+city+state, 3) venue+state
-    const MAX_GEOCODES = 5;
-    const toGeocode = venuesNeedingGeocode.slice(0, MAX_GEOCODES);
-    for (const { venue, city, eventUrl } of toGeocode) {
-      await geocodeVenue(venue, city, regionInfo.state, eventUrl);
+    const MAX_QUICK_GEOCODES = 3;
+    const toQuickGeocode = venuesNeedingGeocode.slice(0, MAX_QUICK_GEOCODES);
+    for (const { venue, city } of toQuickGeocode) {
+      await geocodeVenueQuick(venue, city, regionInfo.state);
     }
 
-    // RA venue coords: fetch up to 5 in parallel (~1-2s) for events
-    // that still lack coords after static + Nominatim
-    const raEventsToFetch: { index: number; raId: string }[] = [];
+    // RA venue coords: 5 in parallel (~1-2s)
+    const raEventsToFetch: { index: number; raId: string; venue: string; city: string }[] = [];
     events.forEach((event, i) => {
       if (event.venue && event.city) {
         const venueKey = `${event.venue}|${event.city}`;
         if (VENUE_COORDS[venueKey]) return;
         if (VENUE_GEOCODE_CACHE.get(venueKey)) return;
       }
-      // Check for RA URL in event link or alternate links
       const raId = extractRaEventId(event.eventUrl);
-      if (raId) { raEventsToFetch.push({ index: i, raId }); return; }
+      if (raId) { raEventsToFetch.push({ index: i, raId, venue: event.venue, city: event.city }); return; }
       for (const link of event.links) {
         const linkRaId = extractRaEventId(link.url);
-        if (linkRaId) { raEventsToFetch.push({ index: i, raId: linkRaId }); return; }
+        if (linkRaId) { raEventsToFetch.push({ index: i, raId: linkRaId, venue: event.venue, city: event.city }); return; }
       }
     });
 
@@ -371,60 +347,45 @@ export async function GET(request: NextRequest) {
     const raToFetch = raEventsToFetch.slice(0, 5);
     if (raToFetch.length > 0) {
       await Promise.allSettled(
-        raToFetch.map(async ({ index, raId }) => {
+        raToFetch.map(async ({ index, raId, venue, city }) => {
           const coords = await fetchRaVenueCoords(raId);
-          if (coords) raResults.set(index, coords);
+          if (coords) {
+            raResults.set(index, coords);
+            // Cache for future requests
+            if (venue && city) VENUE_GEOCODE_CACHE.set(`${venue}|${city}`, coords);
+          }
         })
       );
     }
 
-    // Assign coordinates to events
+    // ---- BUILD RESPONSE ----
+
     const geocodedEvents: EventData[] = events.map((event, i) => {
-      // Try exact venue match first (static coords)
+      // Tier 1: Static venue coords
       if (event.venue && event.city) {
         const venueKey = `${event.venue}|${event.city}`;
         const staticVenue = VENUE_COORDS[venueKey];
         if (staticVenue) {
           const jitter = () => (Math.random() - 0.5) * 0.0005;
-          return {
-            ...event,
-            lat: staticVenue.lat + jitter(),
-            lng: staticVenue.lng + jitter(),
-            address: staticVenue.address,
-          };
+          return { ...event, lat: staticVenue.lat + jitter(), lng: staticVenue.lng + jitter(), address: staticVenue.address };
         }
 
-        // Try geocoded venue cache
+        // Tier 2: Geocoded venue cache
         const geocoded = VENUE_GEOCODE_CACHE.get(venueKey);
         if (geocoded) {
           const jitter = () => (Math.random() - 0.5) * 0.0005;
-          return {
-            ...event,
-            lat: geocoded.lat + jitter(),
-            lng: geocoded.lng + jitter(),
-            address: geocoded.address,
-          };
+          return { ...event, lat: geocoded.lat + jitter(), lng: geocoded.lng + jitter(), address: geocoded.address };
         }
       }
 
-      // Try RA venue coordinates
+      // Tier 3: RA venue coords
       const raCoords = raResults.get(i);
       if (raCoords) {
         const jitter = () => (Math.random() - 0.5) * 0.0005;
-        // Cache this for future requests
-        if (event.venue && event.city) {
-          const key = `${event.venue}|${event.city}`;
-          VENUE_GEOCODE_CACHE.set(key, raCoords);
-        }
-        return {
-          ...event,
-          lat: raCoords.lat + jitter(),
-          lng: raCoords.lng + jitter(),
-          address: raCoords.address,
-        };
+        return { ...event, lat: raCoords.lat + jitter(), lng: raCoords.lng + jitter(), address: raCoords.address };
       }
 
-      // Fall back to city-level coords with larger jitter
+      // Tier 4: City-level coords
       if (event.city && cityCoords.has(event.city)) {
         const coords = cityCoords.get(event.city)!;
         if (coords.lat === 0 && coords.lng === 0) {
@@ -435,16 +396,37 @@ export async function GET(request: NextRequest) {
         return { ...event, lat: coords.lat + jitter(), lng: coords.lng + jitter() };
       }
 
-      // Fallback: region center
+      // Tier 5: Region center
       const jitter = () => (Math.random() - 0.5) * 0.02;
-      return {
-        ...event,
-        lat: regionInfo.center[0] + jitter(),
-        lng: regionInfo.center[1] + jitter(),
-      };
+      return { ...event, lat: regionInfo.center[0] + jitter(), lng: regionInfo.center[1] + jitter() };
     });
 
     DATA_CACHE.set(region, { data: geocodedEvents, timestamp: Date.now() });
+
+    // ---- BACKGROUND: deep geocode remaining venues (event page scraping) ----
+    // Runs AFTER the response is sent — user doesn't wait for this
+    const remainingVenues = venuesNeedingGeocode.slice(MAX_QUICK_GEOCODES);
+    if (remainingVenues.length > 0) {
+      const bgWork = (async () => {
+        // Deep geocode up to 20 more venues in the background
+        const toDeepGeocode = remainingVenues.slice(0, 20);
+        for (const { venue, city, eventUrl } of toDeepGeocode) {
+          const key = `${venue}|${city}`;
+          if (VENUE_GEOCODE_CACHE.get(key)) continue; // already resolved by RA
+          await geocodeVenueDeep(venue, city, regionInfo.state, eventUrl);
+        }
+        // Invalidate the data cache so the next request picks up new coords
+        DATA_CACHE.delete(region);
+      })();
+
+      // Use waitUntil if available (Vercel Edge/Serverless), otherwise fire-and-forget
+      const ctx = (request as unknown as { waitUntil?: (p: Promise<unknown>) => void });
+      if (ctx.waitUntil) {
+        ctx.waitUntil(bgWork);
+      } else {
+        bgWork.catch(() => {}); // fire and forget
+      }
+    }
 
     return NextResponse.json(geocodedEvents);
   } catch (error) {
