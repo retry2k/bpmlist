@@ -427,19 +427,6 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
       </div>
 
       <div className="space-y-3">
-        {/* Event flyer image */}
-        {flyerUrl && (
-          <div className="rounded-lg overflow-hidden border border-neutral-800 -mx-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={flyerUrl}
-              alt={event.title}
-              className="w-full h-auto object-contain"
-              loading="lazy"
-            />
-          </div>
-        )}
-
         <div>
           <div className="flex items-start justify-between gap-2">
             <p className="text-neutral-400 text-xs font-mono uppercase tracking-wider">
@@ -630,6 +617,19 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Event flyer image */}
+        {flyerUrl && (
+          <div className="rounded-lg overflow-hidden border border-neutral-800 -mx-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={flyerUrl}
+              alt={event.title}
+              className="w-full h-auto object-contain"
+              loading="lazy"
+            />
           </div>
         )}
 
