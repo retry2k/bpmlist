@@ -8,6 +8,9 @@ import { VENUE_COORDS } from "@/lib/venue-coords";
 // Persistent venue geocode cache (survives across requests, separate from data cache)
 const VENUE_GEOCODE_CACHE = new Map<string, { lat: number; lng: number; address: string } | null>();
 
+// Cache for RA venue coordinates
+const RA_VENUE_CACHE = new Map<string, { lat: number; lng: number; address: string } | null>();
+
 // Rate limit tracking for Nominatim
 let lastGeocode = 0;
 
@@ -15,7 +18,6 @@ async function geocodeVenue(
   venueName: string,
   city: string,
   state: string,
-  regionCenter: [number, number],
 ): Promise<{ lat: number; lng: number; address: string } | null> {
   const key = `${venueName}|${city}`;
   if (VENUE_GEOCODE_CACHE.has(key)) return VENUE_GEOCODE_CACHE.get(key)!;
@@ -27,6 +29,7 @@ async function geocodeVenue(
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     lastGeocode = Date.now();
 
+    // Try with full venue + city + state first
     const query = `${venueName}, ${city}, ${state}`;
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`;
     const res = await fetch(url, {
@@ -35,33 +38,105 @@ async function geocodeVenue(
     });
     const data = await res.json();
     if (data && data.length > 0) {
-      // Pick result closest to region center
-      let best: { lat: number; lng: number; address: string } | null = null;
-      let bestDist = Infinity;
-      for (const item of data) {
-        const lat = parseFloat(item.lat);
-        const lng = parseFloat(item.lon);
-        const dlat = lat - regionCenter[0];
-        const dlng = lng - regionCenter[1];
-        const dist = dlat * dlat + dlng * dlng;
-        if (dist < bestDist) {
-          bestDist = dist;
-          // Extract a clean address from display_name
-          const parts = (item.display_name || "").split(",").map((s: string) => s.trim());
-          const address = parts.slice(0, 3).join(", ");
-          best = { lat, lng, address };
-        }
-      }
-      // Only accept if within ~50km of region center (roughly 0.5 degrees)
-      if (best && bestDist < 0.25) {
-        VENUE_GEOCODE_CACHE.set(key, best);
-        return best;
-      }
+      // Pick the first result — Nominatim already ranks by relevance
+      // and our query includes city+state for disambiguation
+      const item = data[0];
+      const lat = parseFloat(item.lat);
+      const lng = parseFloat(item.lon);
+      const parts = (item.display_name || "").split(",").map((s: string) => s.trim());
+      const address = parts.slice(0, 3).join(", ");
+      const result = { lat, lng, address };
+      VENUE_GEOCODE_CACHE.set(key, result);
+      return result;
     }
   } catch {
     // ignore - rate limited or network error
   }
   VENUE_GEOCODE_CACHE.set(key, null);
+  return null;
+}
+
+// Geocode a city name to get coordinates
+async function geocodeCity(
+  city: string,
+  state: string,
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const now = Date.now();
+    const wait = Math.max(0, 1100 - (now - lastGeocode));
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastGeocode = Date.now();
+
+    const query = `${city}, ${state}`;
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&featuretype=city`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "bpmlist/1.0 (event map)" },
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await res.json();
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+// Extract RA event ID from URL
+function extractRaEventId(url: string): string | null {
+  const match = url.match(/ra\.co\/events\/(\d+)/);
+  return match ? match[1] : null;
+}
+
+// Fetch venue coordinates from RA GraphQL API
+async function fetchRaVenueCoords(eventId: string): Promise<{ lat: number; lng: number; address: string } | null> {
+  const cacheKey = `ra-venue-${eventId}`;
+  if (RA_VENUE_CACHE.has(cacheKey)) return RA_VENUE_CACHE.get(cacheKey)!;
+
+  try {
+    const res = await fetch("https://ra.co/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Referer": "https://ra.co/events",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      },
+      body: JSON.stringify({
+        query: `{
+          event(id: ${eventId}) {
+            venue {
+              name
+              address
+              area { name }
+              location { latitude longitude }
+            }
+          }
+        }`,
+      }),
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!res.ok) {
+      RA_VENUE_CACHE.set(cacheKey, null);
+      return null;
+    }
+
+    const data = await res.json();
+    const venue = data?.data?.event?.venue;
+    if (venue?.location?.latitude && venue?.location?.longitude) {
+      const result = {
+        lat: venue.location.latitude,
+        lng: venue.location.longitude,
+        address: venue.address || venue.name || "",
+      };
+      RA_VENUE_CACHE.set(cacheKey, result);
+      return result;
+    }
+  } catch {
+    // ignore
+  }
+  RA_VENUE_CACHE.set(cacheKey, null);
   return null;
 }
 
@@ -191,12 +266,26 @@ export async function GET(request: NextRequest) {
       return null;
     }
 
-    // Resolve city coordinates
+    // Resolve city coordinates — and geocode unknown cities
     const cityCoords = new Map<string, { lat: number; lng: number }>();
+    const unknownCities: string[] = [];
     for (const event of events) {
       if (!event.city || cityCoords.has(event.city)) continue;
       const coords = resolveCityCoords(event.city);
-      if (coords) cityCoords.set(event.city, coords);
+      if (coords) {
+        cityCoords.set(event.city, coords);
+      } else {
+        unknownCities.push(event.city);
+      }
+    }
+
+    // Geocode up to 10 unknown cities
+    const uniqueUnknownCities = [...new Set(unknownCities)].slice(0, 10);
+    for (const city of uniqueUnknownCities) {
+      const coords = await geocodeCity(city, regionInfo.state);
+      if (coords) {
+        cityCoords.set(city, coords);
+      }
     }
 
     // Collect unique venues that need geocoding
@@ -207,23 +296,60 @@ export async function GET(request: NextRequest) {
       const key = `${event.venue}|${event.city}`;
       if (seenVenues.has(key)) continue;
       seenVenues.add(key);
-      // Skip if we already have static coords or cached geocode
       if (VENUE_COORDS[key]) continue;
       if (VENUE_GEOCODE_CACHE.has(key)) continue;
       venuesNeedingGeocode.push({ venue: event.venue, city: event.city });
     }
 
-    // Progressively geocode up to 5 unknown venues per request
-    const MAX_GEOCODES = 5;
+    // Geocode up to 30 unknown venues per request (was 5)
+    const MAX_GEOCODES = 30;
     const toGeocode = venuesNeedingGeocode.slice(0, MAX_GEOCODES);
-    if (toGeocode.length > 0) {
-      for (const { venue, city } of toGeocode) {
-        await geocodeVenue(venue, city, regionInfo.state, regionInfo.center);
+    for (const { venue, city } of toGeocode) {
+      await geocodeVenue(venue, city, regionInfo.state);
+    }
+
+    // Collect RA event IDs for events that still don't have coords
+    // (no static, no geocode cache, no city coords)
+    const raEventsToFetch: { index: number; raId: string }[] = [];
+    events.forEach((event, i) => {
+      // Skip if we already have coords from static or geocode
+      if (event.venue && event.city) {
+        const venueKey = `${event.venue}|${event.city}`;
+        if (VENUE_COORDS[venueKey]) return;
+        if (VENUE_GEOCODE_CACHE.get(venueKey)) return;
       }
+
+      // Check if this event or its links have an RA URL
+      const raId = extractRaEventId(event.eventUrl);
+      if (raId) {
+        raEventsToFetch.push({ index: i, raId });
+        return;
+      }
+      for (const link of event.links) {
+        const linkRaId = extractRaEventId(link.url);
+        if (linkRaId) {
+          raEventsToFetch.push({ index: i, raId: linkRaId });
+          return;
+        }
+      }
+    });
+
+    // Fetch RA venue coords in parallel (limit to 15 to avoid overwhelming RA)
+    const raResults = new Map<number, { lat: number; lng: number; address: string }>();
+    const raToFetch = raEventsToFetch.slice(0, 15);
+    if (raToFetch.length > 0) {
+      const results = await Promise.allSettled(
+        raToFetch.map(async ({ index, raId }) => {
+          const coords = await fetchRaVenueCoords(raId);
+          if (coords) raResults.set(index, coords);
+        })
+      );
+      // Suppress unused variable warning
+      void results;
     }
 
     // Assign coordinates to events
-    const geocodedEvents: EventData[] = events.map((event) => {
+    const geocodedEvents: EventData[] = events.map((event, i) => {
       // Try exact venue match first (static coords)
       if (event.venue && event.city) {
         const venueKey = `${event.venue}|${event.city}`;
@@ -251,6 +377,23 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Try RA venue coordinates
+      const raCoords = raResults.get(i);
+      if (raCoords) {
+        const jitter = () => (Math.random() - 0.5) * 0.0005;
+        // Cache this for future requests
+        if (event.venue && event.city) {
+          const key = `${event.venue}|${event.city}`;
+          VENUE_GEOCODE_CACHE.set(key, raCoords);
+        }
+        return {
+          ...event,
+          lat: raCoords.lat + jitter(),
+          lng: raCoords.lng + jitter(),
+          address: raCoords.address,
+        };
+      }
+
       // Fall back to city-level coords with larger jitter
       if (event.city && cityCoords.has(event.city)) {
         const coords = cityCoords.get(event.city)!;
@@ -258,7 +401,7 @@ export async function GET(request: NextRequest) {
           const jitter = () => (Math.random() - 0.5) * 0.02;
           return { ...event, lat: regionInfo.center[0] + jitter(), lng: regionInfo.center[1] + jitter() };
         }
-        const jitter = () => (Math.random() - 0.5) * 0.025;
+        const jitter = () => (Math.random() - 0.5) * 0.008;
         return { ...event, lat: coords.lat + jitter(), lng: coords.lng + jitter() };
       }
 
