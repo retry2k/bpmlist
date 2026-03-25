@@ -482,8 +482,8 @@ export default function Home() {
           >
             bpm<span className="text-violet-500">list</span>
           </h1>
-          <span className="hidden sm:inline text-neutral-500 text-xs font-mono">
-            find your bpm
+          <span className="text-neutral-600 text-[10px] font-mono">
+            powered by <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-400 underline-offset-2">19hz</a>
           </span>
         </div>
 
@@ -581,22 +581,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Mobile footer - outside the flex layout so it's always visible */}
-      <div className="md:hidden flex items-center justify-between px-3 py-1.5 bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0">
-        <p className="text-neutral-600 text-[9px] font-mono">
-          powered by{" "}
-          <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 underline underline-offset-2">19hz.info</a>
-          {" "}&middot;{" "}
-          <a href="https://ticketmaster.com" target="_blank" rel="noopener noreferrer" className="text-neutral-500 underline underline-offset-2">ticketmaster</a>
-          {" "}&middot; say yes to the afters
-        </p>
-        <a
-          href="mailto:bpmlists@gmail.com"
-          className="text-neutral-600 text-[9px] font-mono hover:text-neutral-400 underline underline-offset-2 ml-2 flex-shrink-0"
-        >
-          contact
-        </a>
-      </div>
 
       {/* Footer - desktop */}
       <footer className="hidden md:flex items-center justify-between px-4 py-1.5 bg-neutral-900/90 border-t border-neutral-800 z-[1001] flex-shrink-0">
