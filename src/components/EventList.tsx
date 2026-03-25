@@ -66,7 +66,7 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
             <span className="text-neutral-400 text-xs font-mono font-bold uppercase tracking-wider">
               {group.label}
             </span>
-            <span className="text-neutral-600 text-xs font-mono ml-2">
+            <span className="text-neutral-600 text-xs font-mono ml-4">
               {group.events.length}
             </span>
           </div>
