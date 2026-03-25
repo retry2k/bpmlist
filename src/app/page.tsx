@@ -347,12 +347,12 @@ export default function Home() {
 
   // Time filter buttons (reused in desktop bar and mobile)
   const timeFilterButtons = (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5 md:gap-1">
       {timeFilters.map((t) => (
         <button
           key={t.key}
           onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
-          className={`${t.key === "saved" ? "px-4 py-1.5 text-xl ml-3" : "px-3.5 py-1.5 text-sm"} font-mono rounded-md transition-colors cursor-pointer ${
+          className={`${t.key === "saved" ? "px-4 py-2 md:py-1.5 text-xl ml-3" : "px-4 py-2 md:px-3.5 md:py-1.5 text-sm"} font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
               ? t.key === "saved" ? "bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30"
               : t.key === "afters" ? "bg-violet-700/20 text-violet-400 font-bold border border-violet-700/30"
@@ -388,14 +388,14 @@ export default function Home() {
 
   // Genre filter buttons + dropdown (reused in desktop bar and mobile)
   const genreFilterButtons = (compact: boolean = false) => (
-    <div className="flex items-center gap-1.5 relative">
+    <div className="flex items-center gap-2 md:gap-1.5 relative">
       {QUICK_GENRES.map((g) => {
         const colors = genreColors[g] || genreColors.all;
         return (
           <button
             key={g}
             onClick={() => { setGenreFilter(g); setSelectedEvent(null); setGenreDropdownOpen(false); }}
-            className={`${compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-xs"} font-mono rounded transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`${compact ? "px-2.5 py-1.5 text-xs" : "px-2.5 py-1.5 text-xs"} font-mono rounded transition-colors cursor-pointer flex items-center gap-1.5 ${
               genreFilter === g
                 ? `${colors.active} font-bold`
                 : "text-neutral-500 hover:text-white hover:bg-neutral-800"
@@ -413,7 +413,7 @@ export default function Home() {
       <div className="relative">
         <button
           onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
-          className={`${compact ? "px-2.5 py-1 text-sm" : "px-3 py-1.5 text-sm"} font-mono rounded transition-colors cursor-pointer font-bold ${
+          className={`${compact ? "px-3 py-1.5 text-sm" : "px-3 py-1.5 text-sm"} font-mono rounded transition-colors cursor-pointer font-bold ${
             isCustomGenre
               ? "bg-violet-700/20 text-violet-400 border border-violet-700/30"
               : "text-neutral-400 hover:text-white hover:bg-neutral-800"
@@ -465,7 +465,7 @@ export default function Home() {
   return (
     <div className="h-screen w-screen bg-neutral-950 text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-[1001] flex-shrink-0">
+      <header className="flex items-center justify-between px-4 py-3.5 md:py-3 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-[1001] flex-shrink-0">
         <div className="flex items-center gap-4">
           <h1
             className="text-xl font-black tracking-tighter cursor-pointer"
@@ -491,7 +491,7 @@ export default function Home() {
           <select
             value={regionId}
             onChange={(e) => setRegionId(e.target.value)}
-            className="bg-neutral-800 text-neutral-300 text-sm rounded px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-neutral-500 font-mono cursor-pointer"
+            className="bg-neutral-800 text-neutral-300 text-sm rounded px-3 py-2 md:py-1.5 border border-neutral-700 focus:outline-none focus:border-neutral-500 font-mono cursor-pointer"
           >
             {REGIONS.map((r) => (
               <option key={r.id} value={r.id}>
@@ -563,7 +563,7 @@ export default function Home() {
         {/* Mobile list area */}
         <div className="md:hidden flex flex-col h-[45vh] bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0">
           {/* Mobile filters */}
-          <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-neutral-800/50 flex-shrink-0">
+          <div className="flex flex-col gap-2.5 px-4 py-3 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               {timeFilterButtons}
               <span className="text-neutral-600 text-xs font-mono">
