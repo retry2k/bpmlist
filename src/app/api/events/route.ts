@@ -14,43 +14,97 @@ const RA_VENUE_CACHE = new Map<string, { lat: number; lng: number; address: stri
 // Rate limit tracking for Nominatim
 let lastGeocode = 0;
 
+async function nominatimSearch(query: string): Promise<{ lat: number; lng: number; address: string } | null> {
+  const now = Date.now();
+  const wait = Math.max(0, 1100 - (now - lastGeocode));
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  lastGeocode = Date.now();
+
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "bpmlist/1.0 (event map)" },
+    signal: AbortSignal.timeout(4000),
+  });
+  const data = await res.json();
+  if (data && data.length > 0) {
+    const item = data[0];
+    const parts = (item.display_name || "").split(",").map((s: string) => s.trim());
+    return {
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      address: parts.slice(0, 3).join(", "),
+    };
+  }
+  return null;
+}
+
+// Try to extract a street address from an event page's meta tags
+async function scrapeAddressFromUrl(eventUrl: string): Promise<string | null> {
+  if (!eventUrl) return null;
+  try {
+    const res = await fetch(eventUrl, {
+      headers: { "User-Agent": "bpmlist/1.0 (event map)" },
+      signal: AbortSignal.timeout(5000),
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Look for address in meta description or structured data
+    // Eventbrite: "at 532 S Western Ave, Los Angeles, CA"
+    // RA: address in JSON-LD or meta tags
+    const addressPatterns = [
+      /at\s+(\d+[^,]+,\s*[A-Za-z\s]+,\s*[A-Z]{2})/i,           // "at 123 Main St, City, ST"
+      /"address":\s*"([^"]+)"/i,                                    // JSON "address": "..."
+      /"streetAddress":\s*"([^"]+)"/i,                              // JSON-LD streetAddress
+      /location[^"]*"[^"]*(\d+\s+[A-Za-z\s]+(?:St|Ave|Blvd|Rd|Dr|Way|Pl|Ct|Ln|Pkwy|Hwy)[^,]*,\s*[A-Za-z\s]+,\s*[A-Z]{2})/i,
+    ];
+    for (const pattern of addressPatterns) {
+      const match = html.match(pattern);
+      if (match) return match[1].trim();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 async function geocodeVenue(
   venueName: string,
   city: string,
   state: string,
+  eventUrl?: string,
 ): Promise<{ lat: number; lng: number; address: string } | null> {
   const key = `${venueName}|${city}`;
   if (VENUE_GEOCODE_CACHE.has(key)) return VENUE_GEOCODE_CACHE.get(key)!;
 
   try {
-    // Rate limit: 1 request per second
-    const now = Date.now();
-    const wait = Math.max(0, 1100 - (now - lastGeocode));
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    lastGeocode = Date.now();
+    // Strategy 1: Try scraping the actual address from the event page
+    if (eventUrl) {
+      const scrapedAddress = await scrapeAddressFromUrl(eventUrl);
+      if (scrapedAddress) {
+        const result = await nominatimSearch(scrapedAddress);
+        if (result) {
+          VENUE_GEOCODE_CACHE.set(key, result);
+          return result;
+        }
+      }
+    }
 
-    // Try with full venue + city + state first
-    const query = `${venueName}, ${city}, ${state}`;
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "bpmlist/1.0 (event map)" },
-      signal: AbortSignal.timeout(4000),
-    });
-    const data = await res.json();
-    if (data && data.length > 0) {
-      // Pick the first result — Nominatim already ranks by relevance
-      // and our query includes city+state for disambiguation
-      const item = data[0];
-      const lat = parseFloat(item.lat);
-      const lng = parseFloat(item.lon);
-      const parts = (item.display_name || "").split(",").map((s: string) => s.trim());
-      const address = parts.slice(0, 3).join(", ");
-      const result = { lat, lng, address };
+    // Strategy 2: Geocode venue + city + state
+    const result = await nominatimSearch(`${venueName}, ${city}, ${state}`);
+    if (result) {
       VENUE_GEOCODE_CACHE.set(key, result);
       return result;
     }
+
+    // Strategy 3: Try venue + state only (city might be wrong in 19hz data)
+    const resultNoCity = await nominatimSearch(`${venueName}, ${state}`);
+    if (resultNoCity) {
+      VENUE_GEOCODE_CACHE.set(key, resultNoCity);
+      return resultNoCity;
+    }
   } catch {
-    // ignore - rate limited or network error
+    // ignore
   }
   VENUE_GEOCODE_CACHE.set(key, null);
   return null;
@@ -274,8 +328,8 @@ export async function GET(request: NextRequest) {
       if (coords) cityCoords.set(event.city, coords);
     }
 
-    // Collect unique venues that need geocoding
-    const venuesNeedingGeocode: { venue: string; city: string }[] = [];
+    // Collect unique venues that need geocoding (with their event URL for address scraping)
+    const venuesNeedingGeocode: { venue: string; city: string; eventUrl: string }[] = [];
     const seenVenues = new Set<string>();
     for (const event of events) {
       if (!event.venue || !event.city) continue;
@@ -284,15 +338,15 @@ export async function GET(request: NextRequest) {
       seenVenues.add(key);
       if (VENUE_COORDS[key]) continue;
       if (VENUE_GEOCODE_CACHE.has(key)) continue;
-      venuesNeedingGeocode.push({ venue: event.venue, city: event.city });
+      venuesNeedingGeocode.push({ venue: event.venue, city: event.city, eventUrl: event.eventUrl });
     }
 
-    // Progressive geocoding: only 5 Nominatim calls per request (~5.5s)
-    // Cache builds up over multiple requests
+    // Progressive geocoding: only 5 venues per request
+    // Each venue tries: 1) scrape address from event page, 2) venue+city+state, 3) venue+state
     const MAX_GEOCODES = 5;
     const toGeocode = venuesNeedingGeocode.slice(0, MAX_GEOCODES);
-    for (const { venue, city } of toGeocode) {
-      await geocodeVenue(venue, city, regionInfo.state);
+    for (const { venue, city, eventUrl } of toGeocode) {
+      await geocodeVenue(venue, city, regionInfo.state, eventUrl);
     }
 
     // RA venue coords: fetch up to 5 in parallel (~1-2s) for events
