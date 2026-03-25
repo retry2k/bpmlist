@@ -55,7 +55,7 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string>("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("later");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("now");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
@@ -472,7 +472,7 @@ export default function Home() {
             onClick={() => {
               setSelectedEvent(null);
               setGenreFilter("all");
-              setTimeFilter("later");
+              setTimeFilter("now");
               setRegionId(homeRegion);
               const url = new URL(window.location.href);
               url.searchParams.delete("event");
