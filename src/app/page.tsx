@@ -724,43 +724,41 @@ export default function Home() {
           {/* Mobile filters */}
           <div className="flex flex-col gap-1.5 px-3 py-1 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-0">
-                {/* Drag handle arrow inline */}
-                <div
-                  className="flex items-center justify-center pr-2 cursor-grab active:cursor-grabbing touch-none select-none"
-                  onTouchStart={(e) => {
-                    dragStartY.current = e.touches[0].clientY;
-                    dragCurrentY.current = e.touches[0].clientY;
-                    setIsDragging(true);
-                  }}
-                  onTouchMove={(e) => {
-                    if (dragStartY.current === null) return;
-                    dragCurrentY.current = e.touches[0].clientY;
-                    const delta = dragStartY.current - dragCurrentY.current;
-                    if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
-                    else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
-                  }}
-                  onTouchEnd={() => {
-                    dragStartY.current = null;
-                    dragCurrentY.current = null;
-                    setIsDragging(false);
-                  }}
-                  onClick={() => setMobileListExpanded(!mobileListExpanded)}
+              {timeFilterButtons}
+              {/* Drag handle arrow centered */}
+              <div
+                className="flex items-center justify-center px-3 cursor-grab active:cursor-grabbing touch-none select-none"
+                onTouchStart={(e) => {
+                  dragStartY.current = e.touches[0].clientY;
+                  dragCurrentY.current = e.touches[0].clientY;
+                  setIsDragging(true);
+                }}
+                onTouchMove={(e) => {
+                  if (dragStartY.current === null) return;
+                  dragCurrentY.current = e.touches[0].clientY;
+                  const delta = dragStartY.current - dragCurrentY.current;
+                  if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
+                  else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
+                }}
+                onTouchEnd={() => {
+                  dragStartY.current = null;
+                  dragCurrentY.current = null;
+                  setIsDragging(false);
+                }}
+                onClick={() => setMobileListExpanded(!mobileListExpanded)}
+              >
+                <svg
+                  width="28"
+                  height="10"
+                  viewBox="0 0 28 10"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className={`text-neutral-500 transition-transform ${mobileListExpanded ? "rotate-180" : ""}`}
                 >
-                  <svg
-                    width="28"
-                    height="10"
-                    viewBox="0 0 28 10"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    className={`text-neutral-500 transition-transform ${mobileListExpanded ? "rotate-180" : ""}`}
-                  >
-                    <polyline points="4 8 14 3 24 8" />
-                  </svg>
-                </div>
-                {timeFilterButtons}
+                  <polyline points="4 8 14 3 24 8" />
+                </svg>
               </div>
             </div>
             <div className="flex items-center justify-between">
