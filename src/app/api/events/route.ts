@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import { kv } from "@vercel/kv";
 import { EventData } from "@/types/event";
 import { REGIONS } from "@/types/event";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { VENUE_COORDS } from "@/lib/venue-coords";
 
-// Persistent venue geocode cache (survives across requests on same instance)
+// In-memory venue geocode cache (fast layer, survives within same instance)
 const VENUE_GEOCODE_CACHE = new Map<string, { lat: number; lng: number; address: string } | null>();
 
 // Cache for RA venue coordinates
 const RA_VENUE_CACHE = new Map<string, { lat: number; lng: number; address: string } | null>();
+
+// KV venue cache helpers — persistent across deploys & cold starts
+type VenueCoord = { lat: number; lng: number; address: string };
+
+async function kvGetVenue(key: string): Promise<VenueCoord | null> {
+  try {
+    const result = await kv.get<VenueCoord>(`venue:${key}`);
+    return result || null;
+  } catch {
+    return null;
+  }
+}
+
+async function kvSetVenue(key: string, coords: VenueCoord): Promise<void> {
+  try {
+    // Store permanently in KV (no expiry)
+    await kv.set(`venue:${key}`, coords);
+  } catch {
+    // Silently fail — KV is best-effort enhancement
+  }
+}
 
 // Rate limit tracking for Nominatim
 let lastGeocode = 0;
@@ -78,9 +100,17 @@ async function geocodeVenueQuick(
   const key = `${venueName}|${city}`;
   if (VENUE_GEOCODE_CACHE.has(key)) return VENUE_GEOCODE_CACHE.get(key)!;
 
+  // Check persistent KV cache before hitting geocoding APIs
+  const kvResult = await kvGetVenue(key);
+  if (kvResult) {
+    VENUE_GEOCODE_CACHE.set(key, kvResult);
+    return kvResult;
+  }
+
   const result = await nominatimSearch(`${venueName}, ${city}, ${state}`);
   if (result) {
     VENUE_GEOCODE_CACHE.set(key, result);
+    kvSetVenue(key, result); // persist to KV (fire-and-forget)
     return result;
   }
   VENUE_GEOCODE_CACHE.set(key, null);
@@ -105,6 +135,7 @@ async function geocodeVenueDeep(
       const result = await nominatimSearch(scrapedAddress);
       if (result) {
         VENUE_GEOCODE_CACHE.set(key, result);
+        kvSetVenue(key, result); // persist to KV
         return;
       }
     }
@@ -113,6 +144,7 @@ async function geocodeVenueDeep(
     const result = await nominatimSearch(`${venueName}, ${state}`);
     if (result) {
       VENUE_GEOCODE_CACHE.set(key, result);
+      kvSetVenue(key, result); // persist to KV
     }
   } catch {
     // ignore — background task, don't crash
@@ -306,10 +338,10 @@ export async function GET(request: NextRequest) {
       if (coords) cityCoords.set(event.city, coords);
     }
 
-    // ---- HOT PATH: fast geocoding (3 Nominatim + 5 RA parallel) ----
+    // ---- HOT PATH: fast geocoding (KV bulk check + 3 Nominatim + 5 RA parallel) ----
 
-    // Quick Nominatim geocode: 3 venues max (~3.3s)
-    const venuesNeedingGeocode: { venue: string; city: string; eventUrl: string }[] = [];
+    // Collect unique venues not in static coords or memory cache
+    const unknownVenueKeys: string[] = [];
     const seenVenues = new Set<string>();
     for (const event of events) {
       if (!event.venue || !event.city) continue;
@@ -318,6 +350,34 @@ export async function GET(request: NextRequest) {
       seenVenues.add(key);
       if (VENUE_COORDS[key]) continue;
       if (VENUE_GEOCODE_CACHE.has(key)) continue;
+      unknownVenueKeys.push(key);
+    }
+
+    // Batch check KV for all unknown venues (single round trip via mget)
+    if (unknownVenueKeys.length > 0) {
+      try {
+        const kvKeys = unknownVenueKeys.map(k => `venue:${k}`);
+        const kvResults = await kv.mget<(VenueCoord | null)[]>(...kvKeys);
+        for (let i = 0; i < unknownVenueKeys.length; i++) {
+          const result = kvResults[i];
+          if (result && result.lat && result.lng) {
+            VENUE_GEOCODE_CACHE.set(unknownVenueKeys[i], result);
+          }
+        }
+      } catch {
+        // KV unavailable — fall through to geocoding APIs
+      }
+    }
+
+    // After KV check, find venues still needing geocoding
+    const venuesNeedingGeocode: { venue: string; city: string; eventUrl: string }[] = [];
+    for (const event of events) {
+      if (!event.venue || !event.city) continue;
+      const key = `${event.venue}|${event.city}`;
+      if (VENUE_COORDS[key]) continue;
+      if (VENUE_GEOCODE_CACHE.has(key) && VENUE_GEOCODE_CACHE.get(key) !== null) continue;
+      // Deduplicate
+      if (venuesNeedingGeocode.some(v => `${v.venue}|${v.city}` === key)) continue;
       venuesNeedingGeocode.push({ venue: event.venue, city: event.city, eventUrl: event.eventUrl });
     }
 
@@ -351,8 +411,12 @@ export async function GET(request: NextRequest) {
           const coords = await fetchRaVenueCoords(raId);
           if (coords) {
             raResults.set(index, coords);
-            // Cache for future requests
-            if (venue && city) VENUE_GEOCODE_CACHE.set(`${venue}|${city}`, coords);
+            // Cache for future requests (memory + KV)
+            if (venue && city) {
+              const vKey = `${venue}|${city}`;
+              VENUE_GEOCODE_CACHE.set(vKey, coords);
+              kvSetVenue(vKey, coords); // persist to KV
+            }
           }
         })
       );
