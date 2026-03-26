@@ -137,6 +137,9 @@ export default function EventMap({ events, center, zoom, onEventClick, hoveredEv
       );
       marker.addTo(mapRef.current);
       userMarkerRef.current = marker;
+
+      // Center map on user's exact location
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
     }
   }, [userLocation]);
 

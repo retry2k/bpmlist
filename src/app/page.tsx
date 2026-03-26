@@ -66,6 +66,8 @@ export default function Home() {
   const [shareToast, setShareToast] = useState(false);
   const [vibeChatOpen, setVibeChatOpen] = useState(false);
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const [venueFilter, setVenueFilter] = useState<string | null>(null);
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
@@ -269,9 +271,21 @@ export default function Home() {
     return filteredEvents.filter((e) => e.venue.toLowerCase().includes(lowerVenue));
   }, [filteredEvents, venueFilter]);
 
+  // Apply search query filter
+  const searchFilteredEvents = useMemo(() => {
+    if (!searchQuery.trim()) return venueFilteredEvents;
+    const q = searchQuery.toLowerCase().trim();
+    return venueFilteredEvents.filter((e) =>
+      e.title.toLowerCase().includes(q) ||
+      e.venue.toLowerCase().includes(q) ||
+      e.tags.some((t) => t.toLowerCase().includes(q)) ||
+      (e.organizers && e.organizers.toLowerCase().includes(q))
+    );
+  }, [venueFilteredEvents, searchQuery]);
+
   const mappableEvents = useMemo(
-    () => venueFilteredEvents.filter((e) => e.lat != null && e.lng != null),
-    [venueFilteredEvents]
+    () => searchFilteredEvents.filter((e) => e.lat != null && e.lng != null),
+    [searchFilteredEvents]
   );
 
   const handleEventClick = useCallback((event: EventData) => {
@@ -286,6 +300,29 @@ export default function Home() {
   const handleVenueClick = useCallback((venue: string) => {
     setSelectedEvent(null);
     setVenueFilter(venue);
+  }, []);
+
+  const handleGeolocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      // Fallback to manual input if geolocation not supported
+      setLocationModalOpen(true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude, label: "You" });
+        // Find and switch to closest region
+        const closest = findClosestRegion(latitude, longitude);
+        setRegionId(closest);
+        localStorage.setItem("bpmlist-home-region", closest);
+      },
+      () => {
+        // User denied or error — fall back to manual input
+        setLocationModalOpen(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }, []);
 
   const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
@@ -356,7 +393,7 @@ export default function Home() {
     </div>
   ) : error ? (
     <p className="text-red-400 text-sm font-mono p-4">{error}</p>
-  ) : venueFilteredEvents.length === 0 ? (
+  ) : searchFilteredEvents.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       {timeFilter === "saved" ? (
         <>
@@ -384,7 +421,7 @@ export default function Home() {
         </div>
       )}
       <EventList
-        events={venueFilteredEvents}
+        events={searchFilteredEvents}
         onEventHover={setHoveredEventId}
         onEventClick={handleEventClick}
       />
@@ -570,7 +607,7 @@ export default function Home() {
         {genreFilterButtons()}
 
         <span className="ml-auto text-neutral-500 text-xs font-mono">
-          {loading ? "loading..." : `${venueFilteredEvents.length}`}
+          {loading ? "loading..." : `${searchFilteredEvents.length}`}
         </span>
       </div>
 
@@ -585,13 +622,50 @@ export default function Home() {
 
         {/* Map */}
         <div className="flex-1 relative min-h-0">
+          {/* Floating search box */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] w-[90%] md:w-80">
+            <div className="relative">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder="search artist, venue or genre"
+                className="w-full bg-neutral-900/80 backdrop-blur-md text-white text-sm font-mono rounded-lg pl-9 pr-8 py-2.5 border border-neutral-700/50 focus:outline-none focus:border-violet-700/50 placeholder-neutral-500 shadow-lg"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 cursor-pointer"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
           <EventMap
             events={mappableEvents}
             center={region.center}
             zoom={region.zoom}
             onEventClick={handleEventClick}
             hoveredEventId={hoveredEventId}
-            onLocationRequest={() => setLocationModalOpen(true)}
+            onLocationRequest={() => handleGeolocation()}
             userLocation={userLocation}
             selectedEvent={selectedEvent}
             sidebarOpen={sidebarOpen}
