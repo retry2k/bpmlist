@@ -99,6 +99,7 @@ export default function Home() {
   const dragCurrentY = useRef<number | null>(null);
   const [venueFilter, setVenueFilter] = useState<string | null>(null);
   const [regionPickerOpen, setRegionPickerOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
   // Load saved events from localStorage
@@ -781,12 +782,13 @@ export default function Home() {
               <div className="flex items-center">
                 {genreFilterButtons(true)}
               </div>
-              <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 hover:text-neutral-400 transition-colors flex-shrink-0" title="Send feedback">
+              <button onClick={() => setAboutOpen(true)} className="text-neutral-600 hover:text-neutral-400 transition-colors flex-shrink-0 cursor-pointer" title="About">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="M22 4L12 13L2 4" />
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
                 </svg>
-              </a>
+              </button>
             </div>
           </div>
 
@@ -814,12 +816,12 @@ export default function Home() {
           </a>
           {" "}&middot; say yes to the afters
         </p>
-        <a
-          href="mailto:bpmlists@gmail.com"
-          className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 underline underline-offset-2"
+        <button
+          onClick={() => setAboutOpen(true)}
+          className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 underline underline-offset-2 cursor-pointer"
         >
-          contact
-        </a>
+          about
+        </button>
       </footer>
 
       {/* Share toast */}
@@ -849,6 +851,42 @@ export default function Home() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </button>
+      )}
+
+      {/* About modal */}
+      {aboutOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setAboutOpen(false)}>
+          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-72 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-black tracking-tighter mb-3">
+              bpm<span className="text-violet-500">list</span>
+            </h2>
+            <p className="text-neutral-400 text-xs font-mono leading-relaxed mb-4">
+              created to satisfy your need to just get out and dance.
+            </p>
+            <div className="text-neutral-500 text-[10px] font-mono space-y-2">
+              <p>
+                contact:{" "}
+                <a href="mailto:bpmlists@gmail.com" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">
+                  bpmlists@gmail.com
+                </a>
+              </p>
+              <p>
+                powered by{" "}
+                <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-neutral-300 underline underline-offset-2">19hz</a>
+                {" "}&middot;{" "}
+                <a href="https://ticketmaster.com" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-neutral-300 underline underline-offset-2">ticketmaster</a>
+                {" "}&middot;{" "}
+                <a href="https://ra.co" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-neutral-300 underline underline-offset-2">ra</a>
+              </p>
+            </div>
+            <button
+              onClick={() => setAboutOpen(false)}
+              className="mt-5 text-neutral-600 text-xs font-mono hover:text-neutral-400 cursor-pointer"
+            >
+              close
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Mobile region picker */}
