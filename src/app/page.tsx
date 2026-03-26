@@ -98,6 +98,7 @@ export default function Home() {
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number | null>(null);
   const [venueFilter, setVenueFilter] = useState<string | null>(null);
+  const [regionPickerOpen, setRegionPickerOpen] = useState(false);
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
   // Load saved events from localStorage
@@ -343,6 +344,7 @@ export default function Home() {
 
   const handleEventClick = useCallback((event: EventData) => {
     setSelectedEvent(event);
+    setMobileListExpanded(true);
     // Update URL with event and region for sharing
     const url = new URL(window.location.href);
     url.searchParams.set("region", regionId);
@@ -624,11 +626,12 @@ export default function Home() {
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Desktop: full dropdown */}
           <select
             value={regionId}
             onChange={(e) => setRegionId(e.target.value)}
-            className="bg-neutral-800 text-neutral-300 text-sm rounded px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-neutral-500 font-mono cursor-pointer"
+            className="hidden md:block bg-neutral-800 text-neutral-300 text-sm rounded px-3 py-1.5 border border-neutral-700 focus:outline-none focus:border-neutral-500 font-mono cursor-pointer"
           >
             {REGIONS.map((r) => (
               <option key={r.id} value={r.id}>
@@ -636,6 +639,19 @@ export default function Home() {
               </option>
             ))}
           </select>
+
+          {/* Mobile: location icon that opens picker */}
+          <button
+            onClick={() => setRegionPickerOpen(true)}
+            className="md:hidden flex items-center gap-1.5 text-neutral-400 hover:text-white px-2 py-1.5 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
+            title="Change region"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span className="text-xs font-mono">{REGIONS.find(r => r.id === regionId)?.name || regionId}</span>
+          </button>
 
           {/* Desktop sidebar toggle */}
           <button
@@ -774,7 +790,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
             {panelContent}
           </div>
         </div>
@@ -833,6 +849,31 @@ export default function Home() {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </button>
+      )}
+
+      {/* Mobile region picker */}
+      {regionPickerOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-end bg-black/60 backdrop-blur-sm" onClick={() => setRegionPickerOpen(false)}>
+          <div className="w-full bg-neutral-900 border-t border-neutral-700 rounded-t-2xl p-4 pb-8 max-h-[70vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-neutral-600 rounded-full mx-auto mb-4" />
+            <h3 className="text-white text-sm font-mono font-bold mb-3 px-1">select region</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {REGIONS.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => { setRegionId(r.id); setRegionPickerOpen(false); }}
+                  className={`text-left px-3 py-2.5 rounded-lg text-sm font-mono transition-colors cursor-pointer ${
+                    regionId === r.id
+                      ? "bg-violet-700 text-white"
+                      : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  {r.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Location input modal */}
