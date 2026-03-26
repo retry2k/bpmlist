@@ -93,6 +93,8 @@ export default function Home() {
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileListExpanded, setMobileListExpanded] = useState(false);
+  const dragStartY = useRef<number | null>(null);
   const [venueFilter, setVenueFilter] = useState<string | null>(null);
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
@@ -712,9 +714,32 @@ export default function Home() {
         </div>
 
         {/* Mobile list area */}
-        <div className="md:hidden flex flex-col h-[45vh] bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0">
+        <div
+          className={`md:hidden flex flex-col bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0 transition-[height] duration-300 ease-out ${
+            mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
+          }`}
+        >
+          {/* Drag handle */}
+          <div
+            className="flex justify-center py-1.5 cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+            onTouchStart={(e) => {
+              dragStartY.current = e.touches[0].clientY;
+            }}
+            onTouchEnd={(e) => {
+              if (dragStartY.current === null) return;
+              const delta = dragStartY.current - e.changedTouches[0].clientY;
+              dragStartY.current = null;
+              // Swipe up (delta > 30) = expand, swipe down (delta < -30) = collapse
+              if (delta > 30) setMobileListExpanded(true);
+              else if (delta < -30) setMobileListExpanded(false);
+            }}
+            onClick={() => setMobileListExpanded(!mobileListExpanded)}
+          >
+            <div className="w-10 h-1 rounded-full bg-neutral-600" />
+          </div>
+
           {/* Mobile filters */}
-          <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-neutral-800/50 flex-shrink-0">
+          <div className="flex flex-col gap-1.5 px-3 py-1.5 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               {timeFilterButtons}
               <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 text-xs font-mono hover:text-neutral-400 transition-colors">
