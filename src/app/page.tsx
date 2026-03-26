@@ -723,7 +723,7 @@ export default function Home() {
         >
           {/* Drag handle */}
           <div
-            className="flex flex-col items-center pt-0.5 pb-0 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none"
+            className="flex flex-col items-center py-0 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none -mb-1"
             onTouchStart={(e) => {
               dragStartY.current = e.touches[0].clientY;
               dragCurrentY.current = e.touches[0].clientY;
