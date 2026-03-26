@@ -94,7 +94,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [mobileListExpanded, setMobileListExpanded] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
+  const dragCurrentY = useRef<number | null>(null);
   const [venueFilter, setVenueFilter] = useState<string | null>(null);
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
@@ -721,21 +723,39 @@ export default function Home() {
         >
           {/* Drag handle */}
           <div
-            className="flex justify-center py-1.5 cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+            className="flex flex-col items-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none"
             onTouchStart={(e) => {
               dragStartY.current = e.touches[0].clientY;
+              dragCurrentY.current = e.touches[0].clientY;
+              setIsDragging(true);
             }}
-            onTouchEnd={(e) => {
+            onTouchMove={(e) => {
               if (dragStartY.current === null) return;
-              const delta = dragStartY.current - e.changedTouches[0].clientY;
+              dragCurrentY.current = e.touches[0].clientY;
+              const delta = dragStartY.current - dragCurrentY.current;
+              // Snap during drag: expand if dragged up > 40px, collapse if dragged down > 40px
+              if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
+              else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
+            }}
+            onTouchEnd={() => {
               dragStartY.current = null;
-              // Swipe up (delta > 30) = expand, swipe down (delta < -30) = collapse
-              if (delta > 30) setMobileListExpanded(true);
-              else if (delta < -30) setMobileListExpanded(false);
+              dragCurrentY.current = null;
+              setIsDragging(false);
             }}
             onClick={() => setMobileListExpanded(!mobileListExpanded)}
           >
-            <div className="w-10 h-1 rounded-full bg-neutral-600" />
+            <div className={`w-12 h-1 rounded-full transition-colors ${isDragging ? "bg-violet-500" : "bg-neutral-500"}`} />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={`text-neutral-500 transition-transform mt-0.5 ${mobileListExpanded ? "rotate-180" : ""}`}
+            >
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
           </div>
 
           {/* Mobile filters */}
