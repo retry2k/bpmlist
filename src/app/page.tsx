@@ -566,9 +566,9 @@ export default function Home() {
           <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               {timeFilterButtons}
-              <span className="text-neutral-600 text-xs font-mono">
-                {loading ? "..." : `${filteredEvents.length}`}
-              </span>
+              <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 text-xs font-mono hover:text-neutral-400 transition-colors">
+                feedback?
+              </a>
             </div>
             <div className="flex items-center">
               {genreFilterButtons(true)}
