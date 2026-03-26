@@ -731,37 +731,59 @@ export default function Home() {
         {/* Mobile list area */}
         <div
           className={`md:hidden flex flex-col bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0 transition-[height] duration-300 ease-out ${
-            selectedEvent ? "h-[80vh]" : mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
+            mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
           }`}
         >
-          {/* Mobile filters - hidden when viewing an event */}
-          {!selectedEvent && <div className="flex flex-col gap-1 px-3 pb-1 border-b border-neutral-800/50 flex-shrink-0">
-            {/* Draggable top row - entire row is drag target */}
-            <div
-              className="relative flex items-center -mt-1 select-none"
-              onTouchStart={(e) => {
-                dragStartY.current = e.touches[0].clientY;
-                dragCurrentY.current = e.touches[0].clientY;
-                setIsDragging(true);
-              }}
-              onTouchMove={(e) => {
-                if (dragStartY.current === null) return;
-                e.preventDefault();
-                dragCurrentY.current = e.touches[0].clientY;
-                const delta = dragStartY.current - dragCurrentY.current;
-                if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
-                else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
-              }}
-              onTouchEnd={() => {
-                dragStartY.current = null;
-                dragCurrentY.current = null;
-                setIsDragging(false);
-              }}
-            >
-              {timeFilterButtons}
-              {/* Drag handle arrow centered */}
+          {/* Draggable top row - always visible for drag/tap expand */}
+          <div
+            className="relative flex items-center justify-center select-none border-b border-neutral-800/50 flex-shrink-0"
+            onTouchStart={(e) => {
+              dragStartY.current = e.touches[0].clientY;
+              dragCurrentY.current = e.touches[0].clientY;
+              setIsDragging(true);
+            }}
+            onTouchMove={(e) => {
+              if (dragStartY.current === null) return;
+              e.preventDefault();
+              dragCurrentY.current = e.touches[0].clientY;
+              const delta = dragStartY.current - dragCurrentY.current;
+              if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
+              else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
+            }}
+            onTouchEnd={() => {
+              dragStartY.current = null;
+              dragCurrentY.current = null;
+              setIsDragging(false);
+            }}
+          >
+            {!selectedEvent ? (
+              <>
+                <div className="flex items-center -mt-1 w-full px-3">
+                  {timeFilterButtons}
+                </div>
+                {/* Drag handle arrow centered */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 py-2 cursor-grab active:cursor-grabbing"
+                  onClick={() => setMobileListExpanded(!mobileListExpanded)}
+                >
+                  <svg
+                    width="28"
+                    height="10"
+                    viewBox="0 0 28 10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    className={`text-neutral-500 transition-transform ${mobileListExpanded ? "rotate-180" : ""}`}
+                  >
+                    <polyline points="4 8 14 3 24 8" />
+                  </svg>
+                </div>
+              </>
+            ) : (
+              /* Drag handle only when event panel is open */
               <div
-                className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 py-2 cursor-grab active:cursor-grabbing"
+                className="flex items-center justify-center py-1.5 w-full cursor-grab active:cursor-grabbing"
                 onClick={() => setMobileListExpanded(!mobileListExpanded)}
               >
                 <svg
@@ -777,7 +799,11 @@ export default function Home() {
                   <polyline points="4 8 14 3 24 8" />
                 </svg>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* Mobile filters - hidden when viewing an event */}
+          {!selectedEvent && <div className="flex flex-col gap-1 px-3 pb-1 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {genreFilterButtons(true)}

@@ -417,6 +417,27 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
     setPlayingUrl(previewUrl);
   }, [playingUrl]);
 
+  // Swipe left to go back
+  const swipeStartX = useRef<number | null>(null);
+  const swipeStartY = useRef<number | null>(null);
+
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX;
+    swipeStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    if (swipeStartX.current === null || swipeStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
+    // Swipe right (finger moves left-to-right) with enough horizontal distance and not too vertical
+    if (dx > 80 && dy < 100) {
+      onClose();
+    }
+    swipeStartX.current = null;
+    swipeStartY.current = null;
+  }, [onClose]);
+
   const hasAnyLink = (artist: ArtistResult) =>
     artist.raUrl || artist.soundcloudUrl || artist.instagramUrl || artist.spotifyUrl || artist.bandcampUrl || artist.websiteUrl;
 
@@ -427,7 +448,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
   }, []);
 
   return (
-    <div className="p-5 pb-32">
+    <div className="p-5 pb-32" onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
       {/* Top bar: back + actions */}
       <div className="flex items-center justify-between mb-3">
         <button
