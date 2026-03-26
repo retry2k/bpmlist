@@ -722,8 +722,8 @@ export default function Home() {
           }`}
         >
           {/* Mobile filters */}
-          <div className="flex flex-col gap-1.5 px-3 pt-0 pb-1 border-b border-neutral-800/50 flex-shrink-0">
-            <div className="relative flex items-center -mt-0.5">
+          <div className="flex flex-col gap-1 px-3 pb-1 border-b border-neutral-800/50 flex-shrink-0">
+            <div className="relative flex items-center -mt-1">
               {timeFilterButtons}
               {/* Drag handle arrow absolutely centered */}
               <div
