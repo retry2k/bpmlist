@@ -288,11 +288,6 @@ export default function Home() {
     setVenueFilter(venue);
   }, []);
 
-  const handleSetHomeRegion = useCallback(() => {
-    localStorage.setItem("bpmlist-home-region", regionId);
-    setHomeRegion(regionId);
-  }, [regionId]);
-
   const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
     { key: "now", label: "now" },
     { key: "later", label: "later" },
@@ -551,25 +546,6 @@ export default function Home() {
               </option>
             ))}
           </select>
-
-          {/* Home region button */}
-          {regionId === homeRegion ? (
-            <span className="text-neutral-500 p-1.5" title="Home region">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>
-            </span>
-          ) : (
-            <button
-              onClick={handleSetHomeRegion}
-              className="text-neutral-500 hover:text-neutral-300 p-1.5 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
-              title="Set as home region"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>
-            </button>
-          )}
 
           {/* Desktop sidebar toggle */}
           <button
