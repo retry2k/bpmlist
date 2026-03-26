@@ -687,7 +687,7 @@ export default function Home() {
         )}
 
         {/* Map */}
-        <div className="flex-1 relative min-h-0">
+        <div className={`flex-1 relative min-h-0 ${selectedEvent ? "hidden md:block" : ""}`}>
           {/* Floating search box - bottom left of map */}
           <div className="absolute bottom-3 left-3 z-[1000] w-56 md:w-60">
             <div className="relative">
@@ -730,8 +730,8 @@ export default function Home() {
 
         {/* Mobile list area */}
         <div
-          className={`md:hidden flex flex-col bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0 transition-[height] duration-300 ease-out ${
-            selectedEvent ? "h-[85vh]" : mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
+          className={`md:hidden flex flex-col bg-neutral-900/90 border-t border-neutral-800 transition-all duration-300 ease-out ${
+            selectedEvent ? "flex-1 min-h-0" : mobileListExpanded ? "h-[80vh] flex-shrink-0" : "h-[45vh] flex-shrink-0"
           }`}
         >
           {/* Mobile filters - hidden when viewing an event */}
