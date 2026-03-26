@@ -16,13 +16,38 @@ type TimeFilter = "now" | "later" | "afters" | "saved";
 const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
 type QuickGenre = (typeof QUICK_GENRES)[number];
 
-// Find closest region to a lat/lng
-function findClosestRegion(lat: number, lng: number): string {
+// Find closest region to a lat/lng, optionally using city/region name as hint
+function findClosestRegion(lat: number, lng: number, cityHint?: string, regionHint?: string): string {
+  // Try matching by city/region name first (more reliable than IP geolocation coords)
+  if (cityHint || regionHint) {
+    const hint = `${cityHint || ""} ${regionHint || ""}`.toLowerCase();
+    const CITY_TO_REGION: Record<string, string> = {
+      "new york": "NYC", "brooklyn": "NYC", "manhattan": "NYC", "queens": "NYC", "bronx": "NYC",
+      "los angeles": "LosAngeles", "hollywood": "LosAngeles", "santa monica": "LosAngeles",
+      "san francisco": "BayArea", "oakland": "BayArea", "berkeley": "BayArea", "san jose": "BayArea",
+      "chicago": "CHI", "detroit": "Detroit", "seattle": "Seattle", "miami": "Miami",
+      "fort lauderdale": "Miami", "atlanta": "Atlanta", "denver": "Denver", "boulder": "Denver",
+      "boston": "Massachusetts", "cambridge": "Massachusetts",
+      "portland": "ORE", "las vegas": "LasVegas", "phoenix": "Phoenix", "scottsdale": "Phoenix",
+      "toronto": "Toronto", "vancouver": "BC", "montreal": "Montreal",
+      "washington": "DC", "arlington": "DC", "alexandria": "DC",
+      "philadelphia": "Philadelphia", "minneapolis": "Minneapolis", "st paul": "Minneapolis",
+      "nashville": "Nashville", "new orleans": "NewOrleans", "san diego": "SanDiego",
+      "orlando": "Orlando", "charlotte": "Charlotte", "pittsburgh": "Pittsburgh",
+      "houston": "Texas", "dallas": "Texas", "austin": "Texas", "san antonio": "Texas",
+    };
+    for (const [name, regionId] of Object.entries(CITY_TO_REGION)) {
+      if (hint.includes(name)) return regionId;
+    }
+  }
+
+  // Fallback: closest by coordinates (with latitude-adjusted longitude)
   let closest = REGIONS[0].id;
   let minDist = Infinity;
+  const cosLat = Math.cos(lat * Math.PI / 180);
   for (const r of REGIONS) {
     const dlat = lat - r.center[0];
-    const dlng = lng - r.center[1];
+    const dlng = (lng - r.center[1]) * cosLat;
     const dist = dlat * dlat + dlng * dlng;
     if (dist < minDist) {
       minDist = dist;
@@ -103,7 +128,7 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         if (data.latitude && data.longitude) {
-          const closest = findClosestRegion(data.latitude, data.longitude);
+          const closest = findClosestRegion(data.latitude, data.longitude, data.city, data.region);
           localStorage.setItem("bpmlist-home-region", closest);
           setHomeRegion(closest);
           setRegionId(closest);
