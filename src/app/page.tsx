@@ -488,7 +488,7 @@ export default function Home() {
         <button
           key={t.key}
           onClick={() => { setTimeFilter(t.key); setSelectedEvent(null); }}
-          className={`${t.key === "saved" ? "px-4 py-1.5 text-xl ml-3" : "px-3.5 py-1.5 text-sm"} font-mono rounded-md transition-colors cursor-pointer ${
+          className={`${t.key === "saved" ? "px-4 py-1.5 text-xl ml-5" : "px-3.5 py-1.5 text-sm"} font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
               ? t.key === "saved" ? "bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30"
               : t.key === "afters" ? "bg-violet-700/20 text-violet-400 font-bold border border-violet-700/30"
@@ -721,52 +721,55 @@ export default function Home() {
             mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
           }`}
         >
-          {/* Drag handle */}
-          <div
-            className="flex flex-col items-center py-0 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none -mb-1"
-            onTouchStart={(e) => {
-              dragStartY.current = e.touches[0].clientY;
-              dragCurrentY.current = e.touches[0].clientY;
-              setIsDragging(true);
-            }}
-            onTouchMove={(e) => {
-              if (dragStartY.current === null) return;
-              dragCurrentY.current = e.touches[0].clientY;
-              const delta = dragStartY.current - dragCurrentY.current;
-              // Snap during drag: expand if dragged up > 40px, collapse if dragged down > 40px
-              if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
-              else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
-            }}
-            onTouchEnd={() => {
-              dragStartY.current = null;
-              dragCurrentY.current = null;
-              setIsDragging(false);
-            }}
-            onClick={() => setMobileListExpanded(!mobileListExpanded)}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className={`text-neutral-500 transition-transform ${mobileListExpanded ? "rotate-180" : ""}`}
-            >
-              <polyline points="18 15 12 9 6 15" />
-            </svg>
-          </div>
-
           {/* Mobile filters */}
           <div className="flex flex-col gap-1.5 px-3 py-1 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
-              {timeFilterButtons}
-              <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 text-xs font-mono hover:text-neutral-400 transition-colors">
+              <div className="flex items-center gap-0">
+                {/* Drag handle arrow inline */}
+                <div
+                  className="flex items-center justify-center pr-2 cursor-grab active:cursor-grabbing touch-none select-none"
+                  onTouchStart={(e) => {
+                    dragStartY.current = e.touches[0].clientY;
+                    dragCurrentY.current = e.touches[0].clientY;
+                    setIsDragging(true);
+                  }}
+                  onTouchMove={(e) => {
+                    if (dragStartY.current === null) return;
+                    dragCurrentY.current = e.touches[0].clientY;
+                    const delta = dragStartY.current - dragCurrentY.current;
+                    if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
+                    else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
+                  }}
+                  onTouchEnd={() => {
+                    dragStartY.current = null;
+                    dragCurrentY.current = null;
+                    setIsDragging(false);
+                  }}
+                  onClick={() => setMobileListExpanded(!mobileListExpanded)}
+                >
+                  <svg
+                    width="28"
+                    height="10"
+                    viewBox="0 0 28 10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    className={`text-neutral-500 transition-transform ${mobileListExpanded ? "rotate-180" : ""}`}
+                  >
+                    <polyline points="4 8 14 3 24 8" />
+                  </svg>
+                </div>
+                {timeFilterButtons}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {genreFilterButtons(true)}
+              </div>
+              <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 text-xs font-mono hover:text-neutral-400 transition-colors flex-shrink-0">
                 feedback?
               </a>
-            </div>
-            <div className="flex items-center">
-              {genreFilterButtons(true)}
             </div>
           </div>
 
