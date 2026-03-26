@@ -723,28 +723,32 @@ export default function Home() {
         >
           {/* Mobile filters */}
           <div className="flex flex-col gap-1 px-3 pb-1 border-b border-neutral-800/50 flex-shrink-0">
-            <div className="relative flex items-center -mt-1">
+            {/* Draggable top row - entire row is drag target */}
+            <div
+              className="relative flex items-center -mt-1 select-none"
+              onTouchStart={(e) => {
+                dragStartY.current = e.touches[0].clientY;
+                dragCurrentY.current = e.touches[0].clientY;
+                setIsDragging(true);
+              }}
+              onTouchMove={(e) => {
+                if (dragStartY.current === null) return;
+                e.preventDefault();
+                dragCurrentY.current = e.touches[0].clientY;
+                const delta = dragStartY.current - dragCurrentY.current;
+                if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
+                else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
+              }}
+              onTouchEnd={() => {
+                dragStartY.current = null;
+                dragCurrentY.current = null;
+                setIsDragging(false);
+              }}
+            >
               {timeFilterButtons}
-              {/* Drag handle arrow absolutely centered */}
+              {/* Drag handle arrow centered */}
               <div
-                className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-3 cursor-grab active:cursor-grabbing touch-none select-none"
-                onTouchStart={(e) => {
-                  dragStartY.current = e.touches[0].clientY;
-                  dragCurrentY.current = e.touches[0].clientY;
-                  setIsDragging(true);
-                }}
-                onTouchMove={(e) => {
-                  if (dragStartY.current === null) return;
-                  dragCurrentY.current = e.touches[0].clientY;
-                  const delta = dragStartY.current - dragCurrentY.current;
-                  if (delta > 40 && !mobileListExpanded) setMobileListExpanded(true);
-                  else if (delta < -40 && mobileListExpanded) setMobileListExpanded(false);
-                }}
-                onTouchEnd={() => {
-                  dragStartY.current = null;
-                  dragCurrentY.current = null;
-                  setIsDragging(false);
-                }}
+                className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 py-2 cursor-grab active:cursor-grabbing"
                 onClick={() => setMobileListExpanded(!mobileListExpanded)}
               >
                 <svg
