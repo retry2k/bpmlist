@@ -602,9 +602,9 @@ export default function Home() {
     <div className="h-screen w-screen bg-neutral-950 text-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-[1001] flex-shrink-0">
-        <div className="flex items-center gap-4">
+        <div className="flex items-end gap-1.5">
           <h1
-            className="text-xl font-black tracking-tighter cursor-pointer"
+            className="text-xl font-black tracking-tighter cursor-pointer leading-none"
             onClick={() => {
               setSelectedEvent(null);
               setGenreFilter("all");
@@ -619,7 +619,7 @@ export default function Home() {
           >
             bpm<span className="text-violet-500">list</span>
           </h1>
-          <span className="text-neutral-600 text-[10px] font-mono">
+          <span className="text-neutral-600 text-[8px] font-mono leading-none mb-[2px]">
             powered by <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-400 underline-offset-2">19hz</a>
           </span>
         </div>
