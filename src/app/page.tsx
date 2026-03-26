@@ -723,7 +723,7 @@ export default function Home() {
         >
           {/* Drag handle */}
           <div
-            className="flex flex-col items-center pt-1.5 pb-0 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none"
+            className="flex flex-col items-center pt-0.5 pb-0 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none"
             onTouchStart={(e) => {
               dragStartY.current = e.touches[0].clientY;
               dragCurrentY.current = e.touches[0].clientY;
@@ -744,7 +744,6 @@ export default function Home() {
             }}
             onClick={() => setMobileListExpanded(!mobileListExpanded)}
           >
-            <div className={`w-12 h-1 rounded-full transition-colors ${isDragging ? "bg-violet-500" : "bg-neutral-500"}`} />
             <svg
               width="16"
               height="16"
@@ -752,7 +751,7 @@ export default function Home() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className={`text-neutral-500 transition-transform -mt-0.5 ${mobileListExpanded ? "rotate-180" : ""}`}
+              className={`text-neutral-500 transition-transform ${mobileListExpanded ? "rotate-180" : ""}`}
             >
               <polyline points="18 15 12 9 6 15" />
             </svg>
