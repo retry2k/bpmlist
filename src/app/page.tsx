@@ -731,11 +731,11 @@ export default function Home() {
         {/* Mobile list area */}
         <div
           className={`md:hidden flex flex-col bg-neutral-900/90 border-t border-neutral-800 flex-shrink-0 transition-[height] duration-300 ease-out ${
-            mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
+            selectedEvent ? "h-[85vh]" : mobileListExpanded ? "h-[80vh]" : "h-[45vh]"
           }`}
         >
-          {/* Mobile filters */}
-          <div className="flex flex-col gap-1 px-3 pb-1 border-b border-neutral-800/50 flex-shrink-0">
+          {/* Mobile filters - hidden when viewing an event */}
+          {!selectedEvent && <div className="flex flex-col gap-1 px-3 pb-1 border-b border-neutral-800/50 flex-shrink-0">
             {/* Draggable top row - entire row is drag target */}
             <div
               className="relative flex items-center -mt-1 select-none"
@@ -790,7 +790,7 @@ export default function Home() {
                 </svg>
               </button>
             </div>
-          </div>
+          </div>}
 
           <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "none" }}>
             {panelContent}
