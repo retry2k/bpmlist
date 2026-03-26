@@ -543,6 +543,37 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
           )}
         </div>
 
+        {event.organizers && (
+          <p className="text-neutral-400 text-xs">
+            <span className="text-neutral-600">by</span> {event.organizers}
+          </p>
+        )}
+
+        {/* Event page links - moved up */}
+        <div className="flex flex-wrap gap-2">
+          {event.eventUrl && (
+            <a
+              href={event.eventUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-500 hover:text-violet-400 text-xs font-mono underline underline-offset-2"
+            >
+              event page &rarr;
+            </a>
+          )}
+          {event.links.map((link, i) => (
+            <a
+              key={i}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-500 hover:text-violet-400 text-xs font-mono underline underline-offset-2"
+            >
+              {link.label.toLowerCase()} &rarr;
+            </a>
+          ))}
+        </div>
+
         {/* Going button */}
         <button
           onClick={handleGoing}
@@ -561,12 +592,6 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
           </svg>
           {isGoing ? `you're going! ${goingCount} going` : `${goingCount} going`}
         </button>
-
-        {event.organizers && (
-          <p className="text-neutral-400 text-xs">
-            <span className="text-neutral-600">by</span> {event.organizers}
-          </p>
-        )}
 
         {/* Artists section */}
         {(parsedArtists.length > 0 || loadingArtists) && (
@@ -722,7 +747,34 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
           </div>
         )}
 
-        {/* Similar events */}
+        {/* Report wrong location */}
+        {(event.address || (event.lat != null && event.lng != null)) && (
+          <div className="pt-1">
+            <button
+              onClick={() => {
+                // Clear bad venue coords from KV cache so it gets re-geocoded
+                if (event.venue && event.city) {
+                  fetch("/api/venue-report", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ venue: event.venue, city: event.city }),
+                  }).catch(() => {});
+                }
+                // Open email
+                const subject = encodeURIComponent(`Wrong location: ${event.title}`);
+                const body = encodeURIComponent(
+                  `Event: ${event.title}\nVenue: ${event.venue}\nCity: ${event.city}\nCurrent address: ${event.address || "N/A"}\nCurrent coordinates: ${event.lat ?? "N/A"}, ${event.lng ?? "N/A"}\nCorrect address: [please fill in]\n\nSent from bpmlist.com`
+                );
+                window.open(`mailto:bpmlists@gmail.com?subject=${subject}&body=${body}`, "_self");
+              }}
+              className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 transition-colors cursor-pointer"
+            >
+              report location
+            </button>
+          </div>
+        )}
+
+        {/* Similar events - always at the very bottom */}
         {allEvents && onEventClick && (() => {
           const similar = getSimilarEvents(event, allEvents);
           if (similar.length === 0) return null;
@@ -758,57 +810,6 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
             </div>
           );
         })()}
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          {event.eventUrl && (
-            <a
-              href={event.eventUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-violet-500 hover:text-violet-400 text-xs font-mono underline underline-offset-2"
-            >
-              event page &rarr;
-            </a>
-          )}
-          {event.links.map((link, i) => (
-            <a
-              key={i}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-violet-500 hover:text-violet-400 text-xs font-mono underline underline-offset-2"
-            >
-              {link.label.toLowerCase()} &rarr;
-            </a>
-          ))}
-        </div>
-
-        {/* Report wrong location */}
-        {(event.address || (event.lat != null && event.lng != null)) && (
-          <div className="pt-1">
-            <button
-              onClick={() => {
-                // Clear bad venue coords from KV cache so it gets re-geocoded
-                if (event.venue && event.city) {
-                  fetch("/api/venue-report", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ venue: event.venue, city: event.city }),
-                  }).catch(() => {});
-                }
-                // Open email
-                const subject = encodeURIComponent(`Wrong location: ${event.title}`);
-                const body = encodeURIComponent(
-                  `Event: ${event.title}\nVenue: ${event.venue}\nCity: ${event.city}\nCurrent address: ${event.address || "N/A"}\nCurrent coordinates: ${event.lat ?? "N/A"}, ${event.lng ?? "N/A"}\nCorrect address: [please fill in]\n\nSent from bpmlist.com`
-                );
-                window.open(`mailto:bpmlists@gmail.com?subject=${subject}&body=${body}`, "_self");
-              }}
-              className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 transition-colors cursor-pointer"
-            >
-              report location
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -792,7 +792,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "none" }}>
             {panelContent}
           </div>
         </div>
