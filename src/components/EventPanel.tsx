@@ -427,7 +427,7 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
   }, []);
 
   return (
-    <div className="p-5 pb-20">
+    <div className="p-5 pb-32">
       {/* Top bar: back + actions */}
       <div className="flex items-center justify-between mb-3">
         <button
