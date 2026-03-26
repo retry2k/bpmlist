@@ -619,7 +619,7 @@ export default function Home() {
           >
             bpm<span className="text-violet-500">list</span>
           </h1>
-          <span className="text-neutral-600 text-[8px] font-mono leading-none mb-[2px]">
+          <span className="hidden md:inline text-neutral-600 text-[8px] font-mono leading-none mb-[2px]">
             powered by <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-400 underline-offset-2">19hz</a>
           </span>
         </div>
@@ -658,10 +658,6 @@ export default function Home() {
         <div className="w-px h-5 bg-neutral-700 mx-1.5" />
 
         {genreFilterButtons()}
-
-        <span className="ml-auto text-neutral-500 text-xs font-mono">
-          {loading ? "loading..." : `${searchFilteredEvents.length}`}
-        </span>
       </div>
 
       {/* Main content */}
@@ -769,8 +765,11 @@ export default function Home() {
               <div className="flex items-center">
                 {genreFilterButtons(true)}
               </div>
-              <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 text-xs font-mono hover:text-neutral-400 transition-colors flex-shrink-0">
-                feedback?
+              <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 hover:text-neutral-400 transition-colors flex-shrink-0" title="Send feedback">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M22 4L12 13L2 4" />
+                </svg>
               </a>
             </div>
           </div>
