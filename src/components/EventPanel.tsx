@@ -786,12 +786,27 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
         {/* Report wrong location */}
         {(event.address || (event.lat != null && event.lng != null)) && (
           <div className="pt-1">
-            <a
-              href={`mailto:bpmlists@gmail.com?subject=${encodeURIComponent(`Wrong location: ${event.title}`)}&body=${encodeURIComponent(`Event: ${event.title}\nVenue: ${event.venue}\nCurrent address: ${event.address || "N/A"}\nCurrent coordinates: ${event.lat ?? "N/A"}, ${event.lng ?? "N/A"}\nCorrect address: [please fill in]\n\nSent from bpmlist.com`)}`}
-              className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 transition-colors"
+            <button
+              onClick={() => {
+                // Clear bad venue coords from KV cache so it gets re-geocoded
+                if (event.venue && event.city) {
+                  fetch("/api/venue-report", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ venue: event.venue, city: event.city }),
+                  }).catch(() => {});
+                }
+                // Open email
+                const subject = encodeURIComponent(`Wrong location: ${event.title}`);
+                const body = encodeURIComponent(
+                  `Event: ${event.title}\nVenue: ${event.venue}\nCity: ${event.city}\nCurrent address: ${event.address || "N/A"}\nCurrent coordinates: ${event.lat ?? "N/A"}, ${event.lng ?? "N/A"}\nCorrect address: [please fill in]\n\nSent from bpmlist.com`
+                );
+                window.open(`mailto:bpmlists@gmail.com?subject=${subject}&body=${body}`, "_self");
+              }}
+              className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 transition-colors cursor-pointer"
             >
               report location
-            </a>
+            </button>
           </div>
         )}
       </div>
