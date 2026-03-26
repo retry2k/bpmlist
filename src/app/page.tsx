@@ -120,23 +120,47 @@ export default function Home() {
 
   // Auto-detect user's closest region on first visit
   useEffect(() => {
-    // Skip if URL has a region param (shared link) or we already have a stored home
     if (!initialParams.current.needsDetection) return;
 
-    // Use our own geo API (uses Vercel headers on prod, ipapi fallback on dev)
-    fetch("/api/geo", { signal: AbortSignal.timeout(8000) })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.latitude && data.longitude) {
-          const closest = findClosestRegion(data.latitude, data.longitude, data.city, data.region);
-          localStorage.setItem("bpmlist-home-region", closest);
-          setHomeRegion(closest);
-          setRegionId(closest);
-        }
-      })
-      .catch(() => {
-        // Silently fail — keep default
-      });
+    const setDetectedRegion = (regionId: string) => {
+      localStorage.setItem("bpmlist-home-region", regionId);
+      setHomeRegion(regionId);
+      setRegionId(regionId);
+    };
+
+    // Try browser geolocation first (most accurate, works in in-app browsers)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const closest = findClosestRegion(position.coords.latitude, position.coords.longitude);
+          setDetectedRegion(closest);
+        },
+        () => {
+          // User denied or timed out — fall back to IP-based detection
+          fetch("/api/geo", { signal: AbortSignal.timeout(8000) })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.latitude && data.longitude) {
+                const closest = findClosestRegion(data.latitude, data.longitude, data.city, data.region);
+                setDetectedRegion(closest);
+              }
+            })
+            .catch(() => {});
+        },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
+      );
+    } else {
+      // No geolocation API — fall back to IP
+      fetch("/api/geo", { signal: AbortSignal.timeout(8000) })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.latitude && data.longitude) {
+            const closest = findClosestRegion(data.latitude, data.longitude, data.city, data.region);
+            setDetectedRegion(closest);
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const handleLocationSubmit = useCallback(() => {
