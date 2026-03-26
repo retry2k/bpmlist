@@ -417,26 +417,56 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
     setPlayingUrl(previewUrl);
   }, [playingUrl]);
 
-  // Swipe left to go back
+  // Swipe right to go back with live tracking animation
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const swipeLocked = useRef<"horizontal" | "vertical" | null>(null);
 
   const handleSwipeStart = useCallback((e: React.TouchEvent) => {
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
+    swipeLocked.current = null;
+    setIsSwiping(false);
   }, []);
 
-  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+  const handleSwipeMove = useCallback((e: React.TouchEvent) => {
     if (swipeStartX.current === null || swipeStartY.current === null) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
-    // Swipe right (finger moves left-to-right) with enough horizontal distance and not too vertical
-    if (dx > 80 && dy < 100) {
-      onClose();
+    const dx = e.touches[0].clientX - swipeStartX.current;
+    const dy = e.touches[0].clientY - swipeStartY.current;
+
+    // Lock direction after 10px of movement
+    if (!swipeLocked.current && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      swipeLocked.current = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
+    }
+
+    if (swipeLocked.current === "horizontal" && dx > 0) {
+      setIsSwiping(true);
+      setSwipeOffsetX(dx);
+    }
+  }, []);
+
+  const handleSwipeEnd = useCallback(() => {
+    if (swipeOffsetX > 100) {
+      // Animate out then close
+      setIsExiting(true);
+      setTimeout(() => {
+        onClose();
+        setIsExiting(false);
+        setSwipeOffsetX(0);
+        setIsSwiping(false);
+      }, 250);
+    } else {
+      // Snap back
+      setSwipeOffsetX(0);
+      setIsSwiping(false);
     }
     swipeStartX.current = null;
     swipeStartY.current = null;
-  }, [onClose]);
+    swipeLocked.current = null;
+  }, [swipeOffsetX, onClose]);
 
   const hasAnyLink = (artist: ArtistResult) =>
     artist.raUrl || artist.soundcloudUrl || artist.instagramUrl || artist.spotifyUrl || artist.bandcampUrl || artist.websiteUrl;
@@ -448,7 +478,21 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
   }, []);
 
   return (
-    <div className="p-5 pb-32" onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
+    <div
+      className="p-5 pb-32"
+      onTouchStart={handleSwipeStart}
+      onTouchMove={handleSwipeMove}
+      onTouchEnd={handleSwipeEnd}
+      style={{
+        transform: isExiting
+          ? "translateX(100%)"
+          : swipeOffsetX > 0
+          ? `translateX(${swipeOffsetX}px)`
+          : undefined,
+        transition: isSwiping && !isExiting ? "none" : "transform 0.25s ease-out",
+        opacity: isExiting ? 0 : swipeOffsetX > 0 ? Math.max(0.3, 1 - swipeOffsetX / 400) : 1,
+      }}
+    >
       {/* Top bar: back + actions */}
       <div className="flex items-center justify-between mb-3">
         <button
