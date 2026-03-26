@@ -723,11 +723,11 @@ export default function Home() {
         >
           {/* Mobile filters */}
           <div className="flex flex-col gap-1.5 px-3 py-1 border-b border-neutral-800/50 flex-shrink-0">
-            <div className="flex items-center justify-between">
+            <div className="relative flex items-center">
               {timeFilterButtons}
-              {/* Drag handle arrow centered */}
+              {/* Drag handle arrow absolutely centered */}
               <div
-                className="flex items-center justify-center px-3 cursor-grab active:cursor-grabbing touch-none select-none"
+                className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-3 cursor-grab active:cursor-grabbing touch-none select-none"
                 onTouchStart={(e) => {
                   dragStartY.current = e.touches[0].clientY;
                   dragCurrentY.current = e.touches[0].clientY;
