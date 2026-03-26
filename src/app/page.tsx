@@ -598,27 +598,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Floating search bar */}
-      <div className="px-4 py-1.5 bg-neutral-950/80 backdrop-blur-md z-[1001] flex-shrink-0">
-        <div className="relative w-56 md:w-60">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="search artists, venue or genre"
-            className="w-full bg-neutral-900/80 text-white text-xs font-mono rounded-md pl-7 pr-7 py-2 border border-violet-500/40 focus:outline-none focus:border-violet-500/70 placeholder-neutral-500"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 cursor-pointer">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Filters bar - desktop only */}
       <div className="hidden md:flex items-center gap-1.5 px-4 py-2 bg-neutral-900/60 border-b border-neutral-800/50 z-[1001] flex-shrink-0">
         {timeFilterButtons}
@@ -643,6 +622,24 @@ export default function Home() {
 
         {/* Map */}
         <div className="flex-1 relative min-h-0">
+          {/* Floating search box - bottom left of map */}
+          <div className="absolute bottom-3 left-3 z-[1000] w-56 md:w-60">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="search artists, venue or genre"
+                className="w-full bg-neutral-900/80 backdrop-blur-md text-white text-xs font-mono rounded-md pl-3 pr-7 py-2 border border-violet-500/40 focus:outline-none focus:border-violet-500/70 placeholder-neutral-500 shadow-lg"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 cursor-pointer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              )}
+            </div>
+          </div>
+
           <EventMap
             events={mappableEvents}
             center={region.center}
