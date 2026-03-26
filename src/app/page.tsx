@@ -66,6 +66,7 @@ export default function Home() {
   const [shareToast, setShareToast] = useState(false);
   const [vibeChatOpen, setVibeChatOpen] = useState(false);
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(new Set());
+  const [venueFilter, setVenueFilter] = useState<string | null>(null);
   const pendingEventId = useRef<string | null>(initialParams.current.eventId);
 
   // Load saved events from localStorage
@@ -142,6 +143,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setSelectedEvent(null);
+    setVenueFilter(null);
 
     // Fetch from both 19hz and Ticketmaster in parallel
     const fetch19hz = fetch(`/api/events?region=${regionId}`)
@@ -246,9 +248,16 @@ export default function Home() {
     });
   }, [genreFiltered, timeFilter, savedEventIds]);
 
+  // Apply venue filter
+  const venueFilteredEvents = useMemo(() => {
+    if (!venueFilter) return filteredEvents;
+    const lowerVenue = venueFilter.toLowerCase();
+    return filteredEvents.filter((e) => e.venue.toLowerCase().includes(lowerVenue));
+  }, [filteredEvents, venueFilter]);
+
   const mappableEvents = useMemo(
-    () => filteredEvents.filter((e) => e.lat != null && e.lng != null),
-    [filteredEvents]
+    () => venueFilteredEvents.filter((e) => e.lat != null && e.lng != null),
+    [venueFilteredEvents]
   );
 
   const handleEventClick = useCallback((event: EventData) => {
@@ -258,6 +267,16 @@ export default function Home() {
     url.searchParams.set("region", regionId);
     url.searchParams.set("event", event.id);
     window.history.replaceState({}, "", url.toString());
+  }, [regionId]);
+
+  const handleVenueClick = useCallback((venue: string) => {
+    setSelectedEvent(null);
+    setVenueFilter(venue);
+  }, []);
+
+  const handleSetHomeRegion = useCallback(() => {
+    localStorage.setItem("bpmlist-home-region", regionId);
+    setHomeRegion(regionId);
   }, [regionId]);
 
   const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
@@ -318,6 +337,9 @@ export default function Home() {
       onShare={handleShare}
       isSaved={savedEventIds.has(selectedEvent.id)}
       onToggleSave={toggleSaveEvent}
+      allEvents={events}
+      onEventClick={handleEventClick}
+      onVenueClick={handleVenueClick}
     />
   ) : loading ? (
     <div className="flex items-center justify-center py-20">
@@ -325,7 +347,7 @@ export default function Home() {
     </div>
   ) : error ? (
     <p className="text-red-400 text-sm font-mono p-4">{error}</p>
-  ) : filteredEvents.length === 0 ? (
+  ) : venueFilteredEvents.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       {timeFilter === "saved" ? (
         <>
@@ -338,11 +360,26 @@ export default function Home() {
       )}
     </div>
   ) : (
-    <EventList
-      events={filteredEvents}
-      onEventHover={setHoveredEventId}
-      onEventClick={handleEventClick}
-    />
+    <>
+      {venueFilter && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-neutral-800/50 border-b border-neutral-800/50">
+          <span className="text-neutral-300 text-xs font-mono truncate">@ {venueFilter}</span>
+          <button
+            onClick={() => setVenueFilter(null)}
+            className="flex-shrink-0 text-neutral-500 hover:text-white cursor-pointer"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
+      <EventList
+        events={venueFilteredEvents}
+        onEventHover={setHoveredEventId}
+        onEventClick={handleEventClick}
+      />
+    </>
   );
 
   // Time filter buttons (reused in desktop bar and mobile)
@@ -474,6 +511,7 @@ export default function Home() {
               setGenreFilter("all");
               setTimeFilter("now");
               setRegionId(homeRegion);
+              setVenueFilter(null);
               const url = new URL(window.location.href);
               url.searchParams.delete("event");
               url.searchParams.delete("region");
@@ -500,6 +538,25 @@ export default function Home() {
             ))}
           </select>
 
+          {/* Home region button */}
+          {regionId === homeRegion ? (
+            <span className="text-neutral-500 p-1.5" title="Home region">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              </svg>
+            </span>
+          ) : (
+            <button
+              onClick={handleSetHomeRegion}
+              className="text-neutral-500 hover:text-neutral-300 p-1.5 rounded hover:bg-neutral-800 transition-colors cursor-pointer"
+              title="Set as home region"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              </svg>
+            </button>
+          )}
+
           {/* Desktop sidebar toggle */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -523,7 +580,7 @@ export default function Home() {
         {genreFilterButtons()}
 
         <span className="ml-auto text-neutral-500 text-xs font-mono">
-          {loading ? "loading..." : `${filteredEvents.length}`}
+          {loading ? "loading..." : `${venueFilteredEvents.length}`}
         </span>
       </div>
 

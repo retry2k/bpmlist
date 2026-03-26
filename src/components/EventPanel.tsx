@@ -39,6 +39,9 @@ interface EventPanelProps {
   onShare?: () => void;
   isSaved?: boolean;
   onToggleSave?: (eventId: string) => void;
+  allEvents?: EventData[];
+  onEventClick?: (event: EventData) => void;
+  onVenueClick?: (venue: string) => void;
 }
 
 // Generate .ics calendar file content
@@ -292,13 +295,35 @@ function ArtistDetailCard({ raUrl, onClose }: { raUrl: string; onClose: () => vo
   );
 }
 
-export default function EventPanel({ event, onClose, onShare, isSaved, onToggleSave }: EventPanelProps) {
+// Compute similar events based on shared tags
+function getSimilarEvents(current: EventData, allEvents: EventData[]): EventData[] {
+  if (!allEvents || allEvents.length === 0 || current.tags.length === 0) return [];
+  const currentTags = new Set(current.tags.map((t) => t.toLowerCase()));
+  const scored: { event: EventData; score: number; matchingTags: string[] }[] = [];
+
+  for (const e of allEvents) {
+    if (e.id === current.id) continue;
+    const matchingTags = e.tags.filter((t) => currentTags.has(t.toLowerCase()));
+    if (matchingTags.length === 0) continue;
+    let score = matchingTags.length;
+    if (e.venue.toLowerCase() === current.venue.toLowerCase()) score += 2;
+    if (e.date === current.date) score += 1;
+    scored.push({ event: e, score, matchingTags });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 3).map((s) => s.event);
+}
+
+export default function EventPanel({ event, onClose, onShare, isSaved, onToggleSave, allEvents, onEventClick, onVenueClick }: EventPanelProps) {
   const [artists, setArtists] = useState<ArtistResult[]>([]);
   const [loadingArtists, setLoadingArtists] = useState(false);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [flyerUrl, setFlyerUrl] = useState<string | null>(null);
   const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [goingCount, setGoingCount] = useState(0);
+  const [isGoing, setIsGoing] = useState(false);
 
   const parsedArtists = parseArtists(event.title);
 
@@ -329,6 +354,41 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id]);
+
+  // Fetch going count and check localStorage
+  useEffect(() => {
+    setGoingCount(0);
+    setIsGoing(false);
+    try {
+      const stored = JSON.parse(localStorage.getItem("bpmlist-going") || "[]");
+      if (Array.isArray(stored) && stored.includes(event.id)) {
+        setIsGoing(true);
+      }
+    } catch { /* ignore */ }
+
+    fetch(`/api/going?eventId=${encodeURIComponent(event.id)}`)
+      .then((res) => res.json())
+      .then((data) => setGoingCount(data.count || 0))
+      .catch(() => {});
+  }, [event.id]);
+
+  const handleGoing = useCallback(() => {
+    if (isGoing) return;
+    setIsGoing(true);
+    setGoingCount((c) => c + 1);
+    try {
+      const stored = JSON.parse(localStorage.getItem("bpmlist-going") || "[]");
+      if (!stored.includes(event.id)) {
+        stored.push(event.id);
+        localStorage.setItem("bpmlist-going", JSON.stringify(stored));
+      }
+    } catch { /* ignore */ }
+    fetch("/api/going", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId: event.id }),
+    }).catch(() => {});
+  }, [event.id, isGoing]);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -443,7 +503,17 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
 
         <div>
           <p className="text-neutral-300 text-sm">
-            <span className="text-neutral-500">@</span> {event.venue}
+            <span className="text-neutral-500">@</span>{" "}
+            {onVenueClick ? (
+              <button
+                onClick={() => onVenueClick(event.venue)}
+                className="underline underline-offset-2 hover:text-white transition-colors cursor-pointer"
+              >
+                {event.venue}
+              </button>
+            ) : (
+              event.venue
+            )}
             {event.city && <span className="text-neutral-500"> ({event.city})</span>}
           </p>
           {event.address && (
@@ -472,6 +542,25 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
             <span className="text-amber-400 font-mono">{event.age}</span>
           )}
         </div>
+
+        {/* Going button */}
+        <button
+          onClick={handleGoing}
+          disabled={isGoing}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer ${
+            isGoing
+              ? "bg-violet-700/20 text-violet-400 border border-violet-700/30"
+              : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+          }`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          {isGoing ? `you're going! ${goingCount} going` : `${goingCount} going`}
+        </button>
 
         {event.organizers && (
           <p className="text-neutral-400 text-xs">
@@ -633,6 +722,43 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
           </div>
         )}
 
+        {/* Similar events */}
+        {allEvents && onEventClick && (() => {
+          const similar = getSimilarEvents(event, allEvents);
+          if (similar.length === 0) return null;
+          return (
+            <div className="pt-2 border-t border-neutral-800">
+              <p className="text-neutral-500 text-[10px] font-mono uppercase tracking-wider mb-2">similar events</p>
+              <div className="space-y-1.5">
+                {similar.map((se) => {
+                  const matchingTags = se.tags.filter((t) =>
+                    event.tags.some((et) => et.toLowerCase() === t.toLowerCase())
+                  );
+                  return (
+                    <button
+                      key={se.id}
+                      onClick={() => onEventClick(se)}
+                      className="w-full text-left px-3 py-2 rounded bg-neutral-800/50 hover:bg-neutral-800 transition-colors cursor-pointer"
+                    >
+                      <p className="text-white text-sm font-medium truncate">{se.title}</p>
+                      <p className="text-neutral-500 text-xs font-mono truncate">{se.venue} &middot; {se.date}</p>
+                      {matchingTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {matchingTags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="px-1.5 py-0.5 bg-violet-700/20 text-violet-400 text-[10px] rounded font-mono">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="flex flex-wrap gap-2 pt-1">
           {event.eventUrl && (
             <a
@@ -656,6 +782,18 @@ export default function EventPanel({ event, onClose, onShare, isSaved, onToggleS
             </a>
           ))}
         </div>
+
+        {/* Report wrong location */}
+        {(event.address || (event.lat != null && event.lng != null)) && (
+          <div className="pt-1">
+            <a
+              href={`mailto:bpmlists@gmail.com?subject=${encodeURIComponent(`Wrong location: ${event.title}`)}&body=${encodeURIComponent(`Event: ${event.title}\nVenue: ${event.venue}\nCurrent address: ${event.address || "N/A"}\nCurrent coordinates: ${event.lat ?? "N/A"}, ${event.lng ?? "N/A"}\nCorrect address: [please fill in]\n\nSent from bpmlist.com`)}`}
+              className="text-neutral-600 text-[10px] font-mono hover:text-neutral-400 transition-colors"
+            >
+              report location
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
