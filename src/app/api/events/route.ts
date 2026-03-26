@@ -280,7 +280,7 @@ function parseEvents(html: string): Omit<EventData, "lat" | "lng">[] {
 
 // In-memory cache with TTL
 const DATA_CACHE = new Map<string, { data: EventData[]; timestamp: number }>();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

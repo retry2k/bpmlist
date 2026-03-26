@@ -85,7 +85,7 @@ query GET_EVENT_LISTINGS(
 
 // In-memory cache with TTL
 const DATA_CACHE = new Map<string, { data: EventData[]; timestamp: number }>();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Format date string like "Sat, Mar 29"
 function formatEventDate(dateStr: string): string {

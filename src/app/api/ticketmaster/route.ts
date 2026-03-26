@@ -7,7 +7,7 @@ const BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 
 // Cache results per region for 30 minutes
 const DATA_CACHE = new Map<string, { data: EventData[]; timestamp: number }>();
-const CACHE_TTL = 30 * 60 * 1000;
+const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
 // Map region radius (miles) — wider for spread-out regions
 const REGION_RADIUS: Record<string, number> = {
