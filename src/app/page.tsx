@@ -723,7 +723,7 @@ export default function Home() {
         >
           {/* Drag handle */}
           <div
-            className="flex flex-col items-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none"
+            className="flex flex-col items-center pt-1.5 pb-0 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 select-none"
             onTouchStart={(e) => {
               dragStartY.current = e.touches[0].clientY;
               dragCurrentY.current = e.touches[0].clientY;
@@ -752,14 +752,14 @@ export default function Home() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className={`text-neutral-500 transition-transform mt-0.5 ${mobileListExpanded ? "rotate-180" : ""}`}
+              className={`text-neutral-500 transition-transform -mt-0.5 ${mobileListExpanded ? "rotate-180" : ""}`}
             >
               <polyline points="18 15 12 9 6 15" />
             </svg>
           </div>
 
           {/* Mobile filters */}
-          <div className="flex flex-col gap-1.5 px-3 py-1.5 border-b border-neutral-800/50 flex-shrink-0">
+          <div className="flex flex-col gap-1.5 px-3 py-1 border-b border-neutral-800/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               {timeFilterButtons}
               <a href="mailto:bpmlists@gmail.com" className="text-neutral-600 text-xs font-mono hover:text-neutral-400 transition-colors">
