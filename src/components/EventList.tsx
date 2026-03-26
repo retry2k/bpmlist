@@ -90,6 +90,9 @@ export default function EventList({ events, onEventHover, onEventClick }: EventL
                       {event.source === "ticketmaster" && (
                         <span className="ml-1.5 text-[9px] text-blue-400/60 uppercase">tm</span>
                       )}
+                      {event.source === "ra" && (
+                        <span className="ml-1.5 text-[9px] text-rose-400/60 uppercase">ra</span>
+                      )}
                     </p>
                   </div>
                 </div>

@@ -145,7 +145,7 @@ export default function Home() {
     setSelectedEvent(null);
     setVenueFilter(null);
 
-    // Fetch from both 19hz and Ticketmaster in parallel
+    // Fetch from 19hz, Ticketmaster, and RA in parallel
     const fetch19hz = fetch(`/api/events?region=${regionId}`)
       .then((res) => (res.ok ? res.json() : []))
       .catch(() => []);
@@ -154,8 +154,12 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : []))
       .catch(() => []);
 
-    Promise.all([fetch19hz, fetchTm])
-      .then(([hzEvents, tmEvents]) => {
+    const fetchRa = fetch(`/api/ra?region=${regionId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .catch(() => []);
+
+    Promise.all([fetch19hz, fetchTm, fetchRa])
+      .then(([hzEvents, tmEvents, raEvents]) => {
         // Tag 19hz events with source
         const tagged19hz = (hzEvents as EventData[]).map((e) => ({ ...e, source: "19hz" as const }));
 
@@ -170,7 +174,17 @@ export default function Home() {
           return !hzKeys.has(key);
         });
 
-        const merged = [...tagged19hz, ...uniqueTm];
+        // Deduplicate: remove RA events that match an existing 19hz or TM event (same venue substring + same date)
+        const existingKeys = new Set([
+          ...tagged19hz.map((e) => `${e.venue.toLowerCase().substring(0, 20)}|${e.date}`),
+          ...uniqueTm.map((e) => `${e.venue.toLowerCase().substring(0, 20)}|${e.date}`),
+        ]);
+        const uniqueRa = (raEvents as EventData[]).filter((e) => {
+          const key = `${e.venue.toLowerCase().substring(0, 20)}|${e.date}`;
+          return !existingKeys.has(key);
+        });
+
+        const merged = [...tagged19hz, ...uniqueTm, ...uniqueRa];
         setEvents(merged);
         setLoading(false);
 
@@ -649,6 +663,10 @@ export default function Home() {
           {" "}&middot;{" "}
           <a href="https://ticketmaster.com" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
             ticketmaster
+          </a>
+          {" "}&middot;{" "}
+          <a href="https://ra.co" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
+            ra
           </a>
           {" "}&middot; say yes to the afters
         </p>
