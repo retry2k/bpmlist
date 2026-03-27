@@ -602,7 +602,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-dvh w-screen bg-neutral-950 text-white flex flex-col overflow-hidden">
+    <div className="h-dvh w-full bg-neutral-950 text-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-[1001] flex-shrink-0">
         <div className="flex items-end gap-1.5">
