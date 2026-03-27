@@ -622,7 +622,7 @@ export default function Home() {
           >
             bpm<span className="text-violet-500">list</span>
           </h1>
-          <span className="hidden md:inline text-neutral-600 text-[8px] font-mono leading-none mb-[2px]">
+          <span className="hidden md:inline text-neutral-600 text-[7px] font-mono leading-none mb-[1px]">
             powered by <a href="https://19hz.info" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-400 underline-offset-2">19hz</a>
           </span>
         </div>
@@ -681,7 +681,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
         {/* Desktop Sidebar */}
         {sidebarOpen && (
-          <div className="hidden md:block w-80 bg-neutral-900/90 border-r border-neutral-800 overflow-y-auto overscroll-contain flex-shrink-0 z-[999]">
+          <div className="hidden md:block w-80 bg-neutral-900/90 border-r border-neutral-800 overflow-y-auto overflow-x-hidden overscroll-contain flex-shrink-0 z-[999]">
             {panelContent}
           </div>
         )}
