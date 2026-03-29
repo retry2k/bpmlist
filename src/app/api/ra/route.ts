@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { EventData } from "@/types/event";
+import { isWithinRegion } from "@/lib/geo-bounds";
 
 // RA area code mapping: region ID -> RA area code
 const RA_AREA_CODES: Record<string, number> = {
@@ -274,7 +275,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const events = allListings.map(mapToEventData);
+    const events = allListings
+      .map(mapToEventData)
+      .filter((e) => isWithinRegion(e.lat, e.lng, region));
 
     // Cache results
     DATA_CACHE.set(region, { data: events, timestamp: Date.now() });

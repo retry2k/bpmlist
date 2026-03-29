@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { EventData, REGIONS } from "@/types/event";
+import { isWithinRegion } from "@/lib/geo-bounds";
 
 const API_KEY = process.env.TICKETMASTER_API_KEY;
 const DANCE_ELECTRONIC_GENRE_ID = "KnvZfZ7vAvF";
@@ -223,8 +224,11 @@ export async function GET(request: NextRequest) {
       return true;
     });
 
-    DATA_CACHE.set(regionId, { data: deduped, timestamp: Date.now() });
-    return NextResponse.json(deduped);
+    // Filter out events with coordinates outside the region
+    const validated = deduped.filter((e) => isWithinRegion(e.lat, e.lng, regionId));
+
+    DATA_CACHE.set(regionId, { data: validated, timestamp: Date.now() });
+    return NextResponse.json(validated);
   } catch (error) {
     console.error("Ticketmaster fetch error:", error);
     return NextResponse.json([]);

@@ -5,6 +5,7 @@ import { EventData } from "@/types/event";
 import { REGIONS } from "@/types/event";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { VENUE_COORDS } from "@/lib/venue-coords";
+import { isWithinRegion } from "@/lib/geo-bounds";
 
 // In-memory venue geocode cache (fast layer, survives within same instance)
 const VENUE_GEOCODE_CACHE = new Map<string, { lat: number; lng: number; address: string } | null>();
@@ -465,7 +466,10 @@ export async function GET(request: NextRequest) {
       return { ...event, lat: regionInfo.center[0] + jitter(), lng: regionInfo.center[1] + jitter() };
     });
 
-    DATA_CACHE.set(region, { data: geocodedEvents, timestamp: Date.now() });
+    // Filter out events geocoded to wrong locations (e.g., Dublin instead of Boston)
+    const validEvents = geocodedEvents.filter((e) => isWithinRegion(e.lat, e.lng, region));
+
+    DATA_CACHE.set(region, { data: validEvents, timestamp: Date.now() });
 
     // ---- BACKGROUND: deep geocode remaining venues (event page scraping) ----
     // Runs AFTER the response is sent — user doesn't wait for this
@@ -492,7 +496,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(geocodedEvents);
+    return NextResponse.json(validEvents);
   } catch (error) {
     console.error("Scrape error:", error);
     return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
