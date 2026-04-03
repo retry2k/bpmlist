@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { EventData, REGIONS, GENRE_CATEGORIES, DROPDOWN_GENRE_TAGS } from "@/types/event";
 import { parseEventDate, isSameDay, isWithinDays } from "@/lib/date-utils";
-import EventPanel, { isAfterHours } from "@/components/EventPanel";
+import EventPanel from "@/components/EventPanel";
 import EventList from "@/components/EventList";
 import VibeChat from "@/components/VibeChat";
 
 const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
 
-type TimeFilter = "now" | "later" | "afters" | "saved";
+type TimeFilter = "now" | "later" | "saved";
 
 // Quick-filter genre keys (shown as buttons)
 const QUICK_GENRES = ["all", "house", "techno", "bass", "trance", "dnb"] as const;
@@ -290,10 +290,6 @@ export default function Home() {
       return genreFiltered.filter((e) => savedEventIds.has(e.id));
     }
 
-    if (timeFilter === "afters") {
-      return genreFiltered.filter((e) => isAfterHours(e));
-    }
-
     return genreFiltered.filter((e) => {
       const eventDate = parseEventDate(e.date);
       if (!eventDate) return timeFilter === "later";
@@ -384,7 +380,6 @@ export default function Home() {
   const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
     { key: "now", label: "now" },
     { key: "later", label: "later" },
-    { key: "afters", label: "afters" },
     { key: "saved", label: "♡" },
   ];
 
@@ -494,11 +489,10 @@ export default function Home() {
           className={`${t.key === "saved" ? "px-4 py-1.5 text-xl ml-5" : "px-3.5 py-1.5 text-sm"} font-mono rounded-md transition-colors cursor-pointer ${
             timeFilter === t.key
               ? t.key === "saved" ? "bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30"
-              : t.key === "afters" ? "bg-violet-700/20 text-violet-400 font-bold border border-violet-700/30"
               : "bg-violet-700 text-white font-bold"
               : "text-neutral-500 hover:text-white hover:bg-neutral-800"
           }`}
-          title={t.key === "saved" ? `Saved events (${savedEventIds.size})` : t.key === "afters" ? "After hours (starts after 11pm)" : undefined}
+          title={t.key === "saved" ? `Saved events (${savedEventIds.size})` : undefined}
         >
           {t.key === "saved" && savedEventIds.size > 0
             ? `♡ ${savedEventIds.size}`
@@ -840,7 +834,6 @@ export default function Home() {
           <a href="https://ra.co" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
             ra
           </a>
-          {" "}&middot; say yes to the afters
         </p>
         <button
           onClick={() => setAboutOpen(true)}
