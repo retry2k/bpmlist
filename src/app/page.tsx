@@ -834,6 +834,7 @@ export default function Home() {
           <a href="https://ra.co" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-neutral-300 underline underline-offset-2">
             ra
           </a>
+          {" "}&middot; say yes to the afters
         </p>
         <button
           onClick={() => setAboutOpen(true)}
