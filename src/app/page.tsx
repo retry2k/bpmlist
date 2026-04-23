@@ -380,7 +380,7 @@ export default function Home() {
   }, []);
 
   const timeFilters: { key: TimeFilter; label: string; icon?: string }[] = [
-    { key: "now", label: "now" },
+    { key: "now", label: "soon" },
     { key: "later", label: "later" },
     { key: "saved", label: "♡" },
   ];
