@@ -58,15 +58,15 @@ function findClosestRegion(lat: number, lng: number, cityHint?: string, regionHi
 }
 
 // Read initial state from URL params or stored home region
-function getInitialParams(): { region: string; eventId: string | null; needsDetection: boolean } {
-  if (typeof window === "undefined") return { region: "BayArea", eventId: null, needsDetection: false };
+function getInitialParams(): { region: string; eventId: string | null; hasUrlRegion: boolean } {
+  if (typeof window === "undefined") return { region: "BayArea", eventId: null, hasUrlRegion: false };
   const params = new URLSearchParams(window.location.search);
   const urlRegion = params.get("region");
   const storedHome = localStorage.getItem("bpmlist-home-region");
   return {
     region: urlRegion || storedHome || "BayArea",
     eventId: params.get("event") || null,
-    needsDetection: !urlRegion && !storedHome,
+    hasUrlRegion: !!urlRegion,
   };
 }
 
@@ -124,9 +124,11 @@ export default function Home() {
     });
   }, []);
 
-  // Auto-detect user's closest region on first visit
+  // Auto-detect user's closest region on every page load (unless URL param overrides)
+  // Browser geolocation is cached by the OS after first grant, so this is cheap on repeat visits.
   useEffect(() => {
-    if (!initialParams.current.needsDetection) return;
+    // Don't override if user shared a specific region URL
+    if (initialParams.current.hasUrlRegion) return;
 
     const setDetectedRegion = (regionId: string) => {
       localStorage.setItem("bpmlist-home-region", regionId);
@@ -134,7 +136,7 @@ export default function Home() {
       setRegionId(regionId);
     };
 
-    // Try browser geolocation first (most accurate, works in in-app browsers)
+    // Try browser geolocation first (most accurate, survives VPNs, in-app browsers, bad IP routing)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
