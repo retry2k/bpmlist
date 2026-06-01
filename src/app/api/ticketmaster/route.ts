@@ -6,9 +6,10 @@ const API_KEY = process.env.TICKETMASTER_API_KEY;
 const DANCE_ELECTRONIC_GENRE_ID = "KnvZfZ7vAvF";
 const BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json";
 
-// Cache results per region for 30 minutes
+// Cache results per region
 const DATA_CACHE = new Map<string, { data: EventData[]; timestamp: number }>();
-const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours for healthy fetches
+const EMPTY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for empty/failed fetches
 
 // Map region radius (miles) — wider for spread-out regions
 const REGION_RADIUS: Record<string, number> = {
@@ -158,10 +159,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid region" }, { status: 400 });
   }
 
-  // Check cache
+  // Check cache — use longer TTL for healthy data, shorter for empty
   const cached = DATA_CACHE.get(regionId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return NextResponse.json(cached.data);
+  if (cached) {
+    const age = Date.now() - cached.timestamp;
+    const ttl = cached.data.length > 0 ? CACHE_TTL : EMPTY_CACHE_TTL;
+    if (age < ttl) {
+      return NextResponse.json(cached.data);
+    }
   }
 
   try {
@@ -227,10 +232,20 @@ export async function GET(request: NextRequest) {
     // Filter out events with coordinates outside the region
     const validated = deduped.filter((e) => isWithinRegion(e.lat, e.lng, regionId));
 
+    // If fetch returned nothing but we have stale data, serve stale
+    if (validated.length === 0 && cached && cached.data.length > 0) {
+      console.warn(`TM fetch returned 0 for ${regionId}, serving stale cache`);
+      return NextResponse.json(cached.data);
+    }
+
     DATA_CACHE.set(regionId, { data: validated, timestamp: Date.now() });
     return NextResponse.json(validated);
   } catch (error) {
     console.error("Ticketmaster fetch error:", error);
+    // Fall back to stale cache on total failure
+    if (cached && cached.data.length > 0) {
+      return NextResponse.json(cached.data);
+    }
     return NextResponse.json([]);
   }
 }

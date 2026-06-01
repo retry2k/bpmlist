@@ -86,7 +86,8 @@ query GET_EVENT_LISTINGS(
 
 // In-memory cache with TTL
 const DATA_CACHE = new Map<string, { data: EventData[]; timestamp: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours for healthy fetches
+const EMPTY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for empty/failed fetches
 
 // Format date string like "Sat, Mar 29"
 function formatEventDate(dateStr: string): string {
@@ -241,10 +242,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  // Check cache
+  // Check cache — use longer TTL for healthy data, shorter for empty
   const cached = DATA_CACHE.get(region);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return NextResponse.json(cached.data);
+  if (cached) {
+    const age = Date.now() - cached.timestamp;
+    const ttl = cached.data.length > 0 ? CACHE_TTL : EMPTY_CACHE_TTL;
+    if (age < ttl) {
+      return NextResponse.json(cached.data);
+    }
   }
 
   try {
@@ -255,14 +260,16 @@ export async function GET(request: NextRequest) {
     const dateLte = future.toISOString();
 
     const allListings: RaEventListing[] = [];
+    let anyPageSucceeded = false;
 
-    // Fetch up to 3 pages with 500ms delay between pages
+    // Fetch up to 3 pages — don't break on individual page failures
     for (let page = 1; page <= 3; page++) {
       try {
         const listings = await fetchRaPage(areaCode, page, dateGte, dateLte);
+        anyPageSucceeded = true;
         allListings.push(...listings);
 
-        // Stop if we got fewer than a full page
+        // Stop if we got fewer than a full page (genuine end of results)
         if (listings.length < 20) break;
 
         // 500ms delay between pages
@@ -271,8 +278,14 @@ export async function GET(request: NextRequest) {
         }
       } catch (err) {
         console.error(`RA fetch error page ${page}:`, err);
-        break;
+        // Continue to next page instead of breaking — transient errors shouldn't lose all data
       }
+    }
+
+    // If everything failed and we have stale cache, return stale data
+    if (!anyPageSucceeded && cached && cached.data.length > 0) {
+      console.warn(`RA fetch failed entirely for ${region}, serving stale cache`);
+      return NextResponse.json(cached.data);
     }
 
     const events = allListings
@@ -285,6 +298,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(events);
   } catch (err) {
     console.error("RA API error:", err);
+    // Fall back to stale cache on total failure
+    if (cached && cached.data.length > 0) {
+      return NextResponse.json(cached.data);
+    }
     return NextResponse.json([]);
   }
 }

@@ -281,7 +281,8 @@ function parseEvents(html: string): Omit<EventData, "lat" | "lng">[] {
 
 // In-memory cache with TTL
 const DATA_CACHE = new Map<string, { data: EventData[]; timestamp: number }>();
-const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours for healthy fetches
+const EMPTY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes for empty/failed fetches
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -297,10 +298,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  // Check cache
+  // Check cache — use longer TTL for healthy data, shorter for empty
   const cached = DATA_CACHE.get(region);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return NextResponse.json(cached.data);
+  if (cached) {
+    const age = Date.now() - cached.timestamp;
+    const ttl = cached.data.length > 0 ? CACHE_TTL : EMPTY_CACHE_TTL;
+    if (age < ttl) {
+      return NextResponse.json(cached.data);
+    }
   }
 
   try {
