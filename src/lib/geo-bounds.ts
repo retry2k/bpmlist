@@ -25,8 +25,9 @@ const REGION_RADIUS: Record<string, number> = {
 const DEFAULT_RADIUS = 200;
 
 /**
- * Check if coordinates are within a reasonable distance of a region's center.
- * Returns true if the event is plausibly in the region, false if it's clearly wrong.
+ * Check if coordinates are within a reasonable distance of a region's center,
+ * AND that this region is the closest one to the event (prevents San Diego
+ * events from leaking into LA, etc.)
  */
 export function isWithinRegion(
   lat: number | undefined,
@@ -41,7 +42,19 @@ export function isWithinRegion(
 
   const [centerLat, centerLng] = region.center;
   const maxRadius = REGION_RADIUS[regionId] || DEFAULT_RADIUS;
-  const dist = haversineKm(lat, lng, centerLat, centerLng);
+  const distToThisRegion = haversineKm(lat, lng, centerLat, centerLng);
 
-  return dist <= maxRadius;
+  // First check: must be within max radius of the region
+  if (distToThisRegion > maxRadius) return false;
+
+  // Second check: this region must be the closest of all known regions.
+  // This prevents San Diego events from showing up in LA, Oakland in SF, etc.
+  for (const other of REGIONS) {
+    if (other.id === regionId) continue;
+    const otherDist = haversineKm(lat, lng, other.center[0], other.center[1]);
+    // If another region is meaningfully closer (>20km), the event belongs there
+    if (otherDist < distToThisRegion - 20) return false;
+  }
+
+  return true;
 }
