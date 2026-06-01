@@ -284,7 +284,7 @@ export default function Home() {
     );
   }, [events, genreFilter]);
 
-  // Apply time filter
+  // Apply time filter — falls back to "later" if "soon" returns nothing
   const filteredEvents = useMemo(() => {
     const today = new Date();
 
@@ -292,30 +292,50 @@ export default function Home() {
       return genreFiltered.filter((e) => savedEventIds.has(e.id));
     }
 
-    return genreFiltered.filter((e) => {
-      const eventDate = parseEventDate(e.date);
-      if (!eventDate) return timeFilter === "later";
+    const endOfWeek = new Date(today);
+    const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    endOfWeek.setDate(today.getDate() + daysUntilSunday);
+    endOfWeek.setHours(23, 59, 59, 999);
+    const startOfToday = new Date(today);
+    startOfToday.setHours(0, 0, 0, 0);
 
-      if (timeFilter === "now") {
-        // "now" = today through end of this Sunday
-        const endOfWeek = new Date(today);
-        const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
-        const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-        endOfWeek.setDate(today.getDate() + daysUntilSunday);
-        endOfWeek.setHours(23, 59, 59, 999);
-        const startOfToday = new Date(today);
-        startOfToday.setHours(0, 0, 0, 0);
-        return eventDate >= startOfToday && eventDate <= endOfWeek;
-      }
-      // "later" = everything after this week
-      const endOfWeek = new Date(today);
-      const dayOfWeek = today.getDay();
-      const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-      endOfWeek.setDate(today.getDate() + daysUntilSunday);
-      endOfWeek.setHours(23, 59, 59, 999);
+    const soonEvents = genreFiltered.filter((e) => {
+      const eventDate = parseEventDate(e.date);
+      if (!eventDate) return false;
+      return eventDate >= startOfToday && eventDate <= endOfWeek;
+    });
+
+    const laterEvents = genreFiltered.filter((e) => {
+      const eventDate = parseEventDate(e.date);
+      if (!eventDate) return true; // undated events fall into later
       return eventDate > endOfWeek;
     });
+
+    if (timeFilter === "now") {
+      // Fallback: if no soon events, show later events so list isn't empty
+      return soonEvents.length > 0 ? soonEvents : laterEvents;
+    }
+    return laterEvents;
   }, [genreFiltered, timeFilter, savedEventIds]);
+
+  // Track whether we're currently showing the fallback (later events under soon tab)
+  const showingLaterFallback = useMemo(() => {
+    if (timeFilter !== "now") return false;
+    const today = new Date();
+    const endOfWeek = new Date(today);
+    const dayOfWeek = today.getDay();
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    endOfWeek.setDate(today.getDate() + daysUntilSunday);
+    endOfWeek.setHours(23, 59, 59, 999);
+    const startOfToday = new Date(today);
+    startOfToday.setHours(0, 0, 0, 0);
+    const hasSoon = genreFiltered.some((e) => {
+      const d = parseEventDate(e.date);
+      return d && d >= startOfToday && d <= endOfWeek;
+    });
+    return !hasSoon && filteredEvents.length > 0;
+  }, [timeFilter, genreFiltered, filteredEvents]);
 
   // Apply venue filter
   const venueFilteredEvents = useMemo(() => {
@@ -471,6 +491,11 @@ export default function Home() {
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
+        </div>
+      )}
+      {showingLaterFallback && (
+        <div className="px-3 py-2 text-[11px] font-mono text-neutral-500 border-b border-neutral-800/50">
+          no events this week — showing what&apos;s coming up
         </div>
       )}
       <EventList
